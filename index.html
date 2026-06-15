@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>אתר ה-AI שלי | צ'אט מהיר</title>
+    <title>צ'אט AI מותאם אישית</title>
     <style>
         :root {
             --bg-color: #1a1a1a;
@@ -29,11 +29,12 @@
             background-color: var(--chat-bg);
             padding: 15px;
             text-align: center;
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             font-weight: bold;
             border-bottom: 2px solid #333;
             cursor: pointer;
             user-select: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
         }
 
         #chat-container {
@@ -49,8 +50,9 @@
             max-width: 75%;
             padding: 12px 16px;
             border-radius: 15px;
-            line-height: 1.4;
+            line-height: 1.5;
             word-wrap: break-word;
+            white-space: pre-wrap;
         }
 
         .user {
@@ -70,6 +72,7 @@
             color: white;
             align-self: center;
             border-radius: 5px;
+            font-size: 0.9rem;
         }
 
         #input-container {
@@ -80,7 +83,7 @@
             border-top: 2px solid #333;
         }
 
-        input[type="text"] {
+        input[type="text"], input[type="password"] {
             flex: 1;
             padding: 12px;
             border: none;
@@ -100,95 +103,136 @@
             font-size: 1rem;
             cursor: pointer;
             font-weight: bold;
-            transition: background 0.2s;
+            transition: background 0.2s, transform 0.1s;
         }
 
         button:hover {
             background-color: #005999;
         }
+        
+        button:active {
+            transform: scale(0.98);
+        }
 
-        /* פאנל ניהול סודי */
+        /* פאנל ניהול סודי משופר */
         #admin-panel {
             display: none;
             position: fixed;
             top: 0;
             right: 0;
-            width: 300px;
+            width: 320px;
             height: 100vh;
             background-color: #222;
             border-left: 2px solid #444;
-            box-shadow: -5px 0 15px rgba(0,0,0,0.5);
-            padding: 20px;
+            box-shadow: -5px 0 25px rgba(0,0,0,0.7);
+            padding: 25px;
             box-sizing: border-box;
             z-index: 1000;
+            overflow-y: auto;
         }
 
         #admin-panel h3 {
             margin-top: 0;
-            border-bottom: 1px solid #444;
+            border-bottom: 2px solid #444;
             padding-bottom: 10px;
+            color: var(--accent-color);
+        }
+
+        .admin-group {
+            margin-bottom: 20px;
+        }
+
+        .admin-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: #ccc;
         }
 
         #admin-panel input {
             width: 100%;
+            border-radius: 8px;
             padding: 10px;
-            margin-bottom: 15px;
-            border-radius: 5px;
-            border: 1px solid #555;
             background-color: #333;
+            border: 1px solid #555;
             color: white;
             box-sizing: border-box;
         }
 
-        #admin-panel button {
+        .admin-btn {
             width: 100%;
             background-color: var(--accent-color);
+            border-radius: 8px;
+            margin-top: 5px;
         }
 
-        #admin-panel button:hover {
+        .admin-btn:hover {
             background-color: #388e3c;
         }
 
         #close-admin {
-            background-color: #777 !important;
-            margin-top: 10px;
+            background-color: #555 !important;
+            margin-top: 15px;
+            border-radius: 8px;
+            width: 100%;
         }
     </style>
 </head>
 <body>
 
-    <header id="header-title">🤖 אתר ה-AI שלי | צ'אט מהיר</header>
+    <header id="header-title">🤖 טוען אתר...</header>
 
     <div id="chat-container">
-        <div class="message bot">היי! אני העוזר החכם שלך. במה אוכל לעזור לך היום? 😊</div>
+        <div class="message bot" id="welcome-msg">היי! אני העוזר החכם שלך. במה אוכל לעזור לך היום? 😊</div>
     </div>
 
     <div id="input-container">
-        <input type="text" id="user-input" placeholder="הקלד הודעה כאן..." onkeypress="handleKeyPress(event)">
+        <input type="text" id="user-input" placeholder="הקלד הודעה כאן..." onkeypress="handleKeyPress(event)" autocomplete="off">
         <button onclick="sendMessage()">שלח</button>
     </div>
 
-    <!-- פאנל ניהול סודי -->
-    <div id="admin-panel" id="admin-panel">
-        <h3>🔑 הגדרות מפתח סודיות</h3>
-        <label for="api-key-input">מפתח Groq API:</label>
-        <input type="text" id="api-key-input" placeholder="הדבק כאן את מפתח ה-gsk_">
-        <button onclick="saveApiKey()">שמור מפתח בדפדפן</button>
+    <!-- פאנל ניהול סודי מלא -->
+    <div id="admin-panel">
+        <h3>🔑 הגדרות ניהול אתר</h3>
+        
+        <div class="admin-group">
+            <label for="api-key-input">מפתח Groq API:</label>
+            <input type="text" id="api-key-input" placeholder="הדבק כאן את מפתח ה-gsk_">
+        </div>
+
+        <div class="admin-group">
+            <label for="site-name-input">שם האתר (כותרת):</label>
+            <input type="text" id="site-name-input" placeholder="למשל: הצ'אט של דן 🚀">
+        </div>
+
+        <div class="admin-group">
+            <label for="admin-pass-input">שינוי סיסמת אדמין סודית:</label>
+            <input type="password" id="admin-pass-input" placeholder="הקלד סיסמה חדשה">
+        </div>
+
+        <button class="admin-btn" onclick="saveAdminSettings()">שמור את כל השינויים</button>
         <button id="close-admin" onclick="toggleAdminPanel()">סגור פאנל</button>
     </div>
 
     <script>
-        // בדיקה אם קיים מפתח שמור בדפדפן בטעינה הראשונה
+        // טעינת הגדרות שמורות או הגדרת ברירת מחדל
         let apiKey = localStorage.getItem("groq_api_key") || "";
+        let siteName = localStorage.getItem("groq_site_name") || "🤖 אתר ה-AI שלי | צ'אט מהיר";
+        let adminPassword = localStorage.getItem("groq_admin_pass") || "1234";
+
+        // עדכון כותרת האתר בטעינה
+        document.getElementById("header-title").innerText = siteName;
+        document.title = siteName;
 
         // פתיחת פאנל סודי בלחיצה כפולה על הכותרת
         document.getElementById("header-title").addEventListener("dblclick", () => {
             const password = prompt("הכנס סיסמת מנהל סודית:");
-            if (password === "1234") {
+            if (password === adminPassword) {
                 toggleAdminPanel();
-                if(apiKey) {
-                    document.getElementById("api-key-input").value = apiKey;
-                }
+                // מילוי השדות בערכים הנוכחיים
+                document.getElementById("api-key-input").value = apiKey;
+                document.getElementById("site-name-input").value = siteName;
+                document.getElementById("admin-pass-input").value = adminPassword;
             } else if (password !== null) {
                 alert("סיסמה שגויה!");
             }
@@ -199,16 +243,30 @@
             panel.style.display = panel.style.display === "block" ? "none" : "block";
         }
 
-        function saveApiKey() {
+        function saveAdminSettings() {
             const keyInput = document.getElementById("api-key-input").value.trim();
+            const nameInput = document.getElementById("site-name-input").value.trim();
+            const passInput = document.getElementById("admin-pass-input").value.trim();
+
             if (keyInput) {
                 localStorage.setItem("groq_api_key", keyInput);
                 apiKey = keyInput;
-                alert("המפתח נשמר בהצלחה בדפדפן זה! האתר מוכן לפעולה.");
-                toggleAdminPanel();
-            } else {
-                alert("נא להזין מפתח תקין.");
             }
+            
+            if (nameInput) {
+                localStorage.setItem("groq_site_name", nameInput);
+                siteName = nameInput;
+                document.getElementById("header-title").innerText = siteName;
+                document.title = siteName;
+            }
+
+            if (passInput) {
+                localStorage.setItem("groq_admin_pass", passInput);
+                adminPassword = passInput;
+            }
+
+            alert("ההגדרות נשמרו בהצלחה בדפדפן זה!");
+            toggleAdminPanel();
         }
 
         function handleKeyPress(event) {
@@ -223,18 +281,15 @@
             
             if (!userMessage) return;
 
-            // בדיקה אם המפתח קיים
             if (!apiKey) {
-                alert("המפתח לא מוגדר! אנא בצע לחיצה כפולה על כותרת האתר, הקש סיסמה 1234 והגדר מפתח API.");
+                alert("המפתח לא מוגדר! אנא בצע לחיצה כפולה על כותרת האתר, הקש סיסמה והגדר מפתח API.");
                 return;
             }
 
-            // הצגת הודעת המשתמש במסך
             appendMessage(userMessage, "user");
             inputElement.value = "";
 
-            // הצגת הודעת טעינה זמנית מה-AI
-            const loadingId = appendMessage("חושב... ⚡", "bot");
+            const loadingId = appendMessage("כותב תגובה... ⚡", "bot");
 
             try {
                 const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -248,30 +303,37 @@
                         messages: [
                             { 
                                 role: "system", 
-                                content: "אתה עוזר בינה מלאכותית חכם, מנומס ובטוח באתר הצ'אט של דן. חוקים נוקשים שאתה חייב לציית להם: 1. אל תעזור בשום אופן לפרוץ למחשבים, חשבונות, אתרים או משתמשים (כמו רובלוקס, אינסטגרם וכו'). אם מבקשים ממך קוד פריצה או עזרה בפריצה, סרב בנימוס ואמור שאתה לא תומך בפעילויות לא חוקיות. 2. אל תשתף פעולה עם קללות, בריונות, תוכן פוגעני או פגיעה באחרים. 3. ענה תמיד בעברית ברורה, זורמת וידידותית." 
+                                content: `אתה עוזר בינה מלאכותית חכם, מקצועי, ובטוח לחלוטין בצ'אט הרשמי של דן.
+
+חוקי שפה נוקשים (עברית):
+1. ענה אך ורק בעברית רהוטה, מושלמת וטבעית, ללא שום שגיאות כתיב או דקדוק.
+2. אל תמציא מילים ואל תתרגם מונחים מאנגלית בצורה משובשת. תכתוב כמו בן אדם ישראלי שנולד בארץ.
+3. שמור על זכר/נקבה נכונים לאורך כל המשפט.
+
+חוקי בטיחות נוקשים (Guardrails):
+1. חסימת פריצות: אל תספק בשום אופן מידע, הדרכה, עצות או קוד שקשורים לפריצה למערכות, אתרים, מחשבים או חשבונות רשתות חברתיות (כמו רובלוקס, דיסקורד, אינסטגרם, טיקטוק וכדומה). אם משתמש מבקש עזרה בפריצה, סרב בצורה קצרה ומנומסת ואמור שאתה שומר על חוקי הבטיחות.
+2. חסימת פגיעה: אל תייצר תוכן פוגעני, קללות, בריונות, או תוכן פלילי.`
                             },
                             { role: "user", content: userMessage }
-                        ]
+                        ],
+                        temperature: 0.5 // הורדת הטמפרטורה הופכת אותו ליותר מדויק ופחות עושה שגיאות בשפה
                     })
                 });
 
                 const data = await response.json();
-                
-                // הסרת הודעת הטעינה
                 document.getElementById(loadingId).remove();
 
                 if (response.ok) {
                     const botReply = data.choices[0].message.content;
                     appendMessage(botReply, "bot");
                 } else {
-                    // טיפול בשגיאות שמגיעות מ-Groq
                     const errorMsg = data.error ? data.error.message : "שגיאה לא ידועה";
                     appendMessage(`❌ שגיאה מ-Groq: ${errorMsg}`, "error");
                 }
 
             } catch (error) {
                 document.getElementById(loadingId).remove();
-                appendMessage("❌ שגיאת תקשורת. ודא שאתה מחובר לאינטרנט ושהמפתח שהזנת תקין.", "error");
+                appendMessage("❌ שגיאת תקשורת. ודא שהמפתח תקין ויש חיבור לאינטרנט.", "error");
                 console.error(error);
             }
         }
