@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>אתר ה-AI שלי | גרסה יציבה ומאובטחת</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0b141a; 
+            color: #e9edef;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            background-color: #202c33;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+
+        h1 {
+            color: #d1d7db;
+            margin: 0;
+            font-size: 22px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        #chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background-image: url('https://user-images.githubusercontent.com/1500684/108206263-fb706f00-7140-11eb-8c6f-530182414774.png');
+            background-attachment: fixed;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 16px;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+        .user-message {
+            background-color: #005c4b;
+            color: #e9edef;
+            align-self: flex-end;
+            border-top-right-radius: 0;
+        }
+        .ai-message {
+            background-color: #202c33;
+            color: #e9edef;
+            align-self: flex-start;
+            border-top-left-radius: 0;
+        }
+
+        #input-area {
+            display: flex;
+            gap: 10px;
+            padding: 10px;
+            background-color: #202c33;
+            align-items: center;
+            z-index: 10;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 15px;
+            border-radius: 20px;
+            border: none;
+            background-color: #2a3942;
+            color: white;
+            font-size: 16px;
+            outline: none;
+        }
+
+        #send-btn {
+            width: 45px;
+            height: 45px;
+            background-color: #00a884;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* פאנל מנהל סודי */
+        #admin-panel {
+            position: fixed;
+            top: 0;
+            left: -340px; 
+            width: 300px;
+            height: 100vh;
+            background-color: #111b21;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+            transition: left 0.3s ease;
+            padding: 20px;
+            z-index: 100;
+            border-right: 3px solid #00a884;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+        #admin-panel.open { left: 0; }
+        #admin-panel h2 { color: #00a884; margin-top: 0; font-size: 20px; border-bottom: 1px solid #2a3942; padding-bottom: 10px; }
+        .admin-section { margin-bottom: 15px; }
+        .admin-section label { display: block; margin-bottom: 5px; font-size: 13px; color: #a6adc8; }
+        .admin-section select, .admin-section input, .admin-section textarea {
+            width: 100%; padding: 8px; background-color: #202c33; border: 1px solid #2a3942; color: white; border-radius: 5px; box-sizing: border-box;
+        }
+        .admin-btn {
+            background-color: #00a884; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 5px;
+        }
+
+        /* סימון מצב עריכה */
+        .edit-mode-active [contenteditable="true"] {
+            outline: 2px dashed #00a884 !important;
+            background-color: rgba(0, 168, 132, 0.1) !important;
+        }
+    </style>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+    <div id="admin-panel">
+        <h2>👑 פאנל מנהל סודי</h2>
+        
+        <div style="background-color: #1e293b; padding: 8px; border-radius: 5px; margin-bottom: 15px; color: #34d399; font-size: 13px; font-weight: bold; text-align: center;">
+            📡 ענן Firebase מחובר פיקס
+        </div>
+
+        <div class="admin-section">
+            <label>🔑 מפתח Gemini API הסודי שלך:</label>
+            <input type="password" id="gemini-key-input" placeholder="הדבק את המפתח שמתחיל ב-AIza...">
+            <button class="admin-btn" onclick="saveGeminiKey()">שמור מפתח לצמיתות</button>
+        </div>
+
+        <div class="admin-section">
+            <label>🔐 סיסמת מנהל חדשה לאתר:</label>
+            <input type="password" id="admin-pass-input" placeholder="שינוי סיסמה (נוכחית: 1234)">
+            <button class="admin-btn" onclick="saveAdminPassword()">עדכן סיסמה</button>
+        </div>
+
+        <hr style="border-color: #2a3942; margin: 20px 0;">
+
+        <div class="admin-section">
+            <button class="admin-btn" id="edit-mode-btn" style="background-color: #f59e0b;" onclick="toggleEditMode()">🛠️ הפעל מצב עריכה באתר</button>
+        </div>
+
+        <div class="admin-section">
+            <button class="admin-btn" style="background-color: #10b981;" onclick="saveEditsToCloud()">🌍 שמור שינויים לכולם!</button>
+        </div>
+
+        <button class="admin-btn" style="background-color: #ea0038; margin-top: 20px;" onclick="toggleAdminPanel()">סגור פאנל</button>
+    </div>
+
+    <header>
+        <h1 id="site-title" ondblclick="checkAdminPassword()">🤖 אתר ה-AI שלי | צ'אט</h1>
+    </header>
+
+    <div id="chat-container">
+        <div class="message ai-message">
+            <div id="welcome-text" contenteditable="false">ברוכים הבאים לצ'אט ה-AI הרשמי! תרגישו חופשי לשאול אותי כל דבר.</div>
+        </div>
+    </div>
+
+    <div id="input-area">
+        <input type="text" id="user-input" placeholder="כתוב הודעה כאן..." onkeydown="handleKeyPress(event)">
+        <button id="send-btn" onclick="sayHello()">✈️</button>
+    </div>
+
+    <script>
+        // פרטי ה-Firebase מוטמעים ישירות בקוד
+        const firebaseConfig = {
+            apiKey: "AIzaSyACAMGgLtBI1JzVHZZJLCo3kioEtJAQkco",
+            authDomain: "my-ai-site-7d2a8.firebaseapp.com",
+            databaseURL: "https://my-ai-site-7d2a8-default-rtdb.firebaseio.com",
+            projectId: "my-ai-site-7d2a8",
+            storageBucket: "my-ai-site-7d2a8.firebasestorage.app",
+            messagingSenderId: "388188575679",
+            appId: "1:388188575679:web:ab5674efb9bb4e9d81f30a"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        
+        let isEditMode = false;
+
+        function getGeminiKey() { return localStorage.getItem('gemini_key_secure') || ''; }
+        function getAdminPassword() { return localStorage.getItem('admin_pass_secure') || '1234'; }
+
+        window.onload = function() {
+            listenToCloudChanges();
+            if(getGeminiKey()) {
+                document.getElementById('gemini-key-input').placeholder = "🔑 המפתח שמור ומאובטח במחשב זה!";
+            }
+        };
+
+        function saveGeminiKey() {
+            let key = document.getElementById('gemini-key-input').value.trim();
+            if(key) { 
+                localStorage.setItem('gemini_key_secure', key); 
+                alert("✅ המפתח נשמר עמוק בזיכרון של הדפדפן שלך ולא יימחק!"); 
+                document.getElementById('gemini-key-input').value = "";
+                document.getElementById('gemini-key-input').placeholder = "🔑 המפתח שמור ומאובטח במחשב זה!";
+            }
+        }
+
+        function saveAdminPassword() {
+            let pass = document.getElementById('admin-pass-input').value.trim();
+            if(pass) { localStorage.setItem('admin_pass_secure', pass); alert("✅ סיסמת המנהל עודכנה!"); }
+        }
+
+        function checkAdminPassword() {
+            let password = prompt("👑 שלום המנהל! הכנס סיסמה סודית:");
+            if (password === getAdminPassword()) {
+                toggleAdminPanel();
+            } else if (password !== null) {
+                alert("❌ סיסמה שגויה! הגישה חסומה.");
+            }
+        }
+
+        function toggleAdminPanel() {
+            document.getElementById("admin-panel").classList.toggle("open");
+        }
+
+        function toggleEditMode() {
+            isEditMode = !isEditMode;
+            let btn = document.getElementById('edit-mode-btn');
+            let welcomeBox = document.getElementById('welcome-text');
+            
+            if(isEditMode) {
+                document.body.classList.add('edit-mode-active');
+                document.getElementById('site-title').contentEditable = "true";
+                welcomeBox.contentEditable = "true";
+                btn.innerText = "🛑 כבה מצב עריכה";
+                btn.style.backgroundColor = "#ef4444";
+            } else {
+                document.body.classList.remove('edit-mode-active');
+                document.getElementById('site-title').contentEditable = "false";
+                welcomeBox.contentEditable = "false";
+                btn.innerText = "🛠️ הפעל מצב עריכה באתר";
+                btn.style.backgroundColor = "#f59e0b";
+            }
+        }
+
+        function saveEditsToCloud() {
+            let dataToSave = {
+                siteTitle: document.getElementById('site-title').innerText,
+                welcomeText: document.getElementById('welcome-text').innerText
+            };
+
+            db.ref('siteSettings').set(dataToSave).then(() => {
+                alert("🌍 השינויים נשמרו בהצלחה בענן של גוגל לכל העולם!");
+                toggleEditMode();
+                toggleAdminPanel();
+            }).catch(err => {
+                alert("❌ שגיאה בשמירה לענן: " + err.message);
+            });
+        }
+
+        function listenToCloudChanges() {
+            db.ref('siteSettings').on('value', (snapshot) => {
+                let data = snapshot.val();
+                if(data) {
+                    if(data.siteTitle) document.getElementById('site-title').innerText = data.siteTitle;
+                    if(data.welcomeText && !isEditMode) document.getElementById('welcome-text').innerText = data.welcomeText;
+                }
+            });
+        }
+
+        async function sayHello() {
+            let inputArea = document.getElementById("user-input");
+            let userMessage = inputArea.value.trim();
+            if (!userMessage || isEditMode) return;
+
+            let apiKey = getGeminiKey();
+            if (!apiKey) { 
+                alert("❌ אופס! לא הגדרת מפתח API במחשב הזה. פתח את הפאנל הסודי ושמור מפתח."); 
+                return; 
+            }
+
+            addMessage(userMessage, 'user');
+            inputArea.value = "";
+            addLoadingMessage();
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+            
+            async function makeRequest(retries = 3) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: userMessage }] }] })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.candidates && data.candidates[0].content.parts[0].text) {
+                        removeLoadingMessage();
+                        addMessage(data.candidates[0].content.parts[0].text, 'ai');
+                    } else if (data.error) {
+                        if ((data.error.message.includes("high demand") || data.error.code === 503 || data.error.message.includes("overloaded")) && retries > 0) {
+                            setTimeout(() => makeRequest(retries - 1), 1500);
+                        } else {
+                            removeLoadingMessage();
+                            addMessage(`❌ שגיאה מגוגל: ${data.error.message}`, 'ai');
+                        }
+                    } else {
+                        removeLoadingMessage();
+                        addMessage("❌ התקבלה תשובה ריקה מגוגל. אנא נסה שוב.", 'ai');
+                    }
+                } catch (error) {
+                    if (retries > 0) {
+                        setTimeout(() => makeRequest(retries - 1), 1500);
+                    } else {
+                        removeLoadingMessage();
+                        addMessage(`❌ תקלה בתקשורת: ${error.message}`, 'ai');
+                    }
+                }
+            }
+
+            makeRequest();
+        }
+
+        function handleKeyPress(event) { if (event.key === "Enter") { event.preventDefault(); sayHello(); } }
+
+        function addMessage(text, sender) {
+            let chatContainer = document.getElementById("chat-container");
+            let messageDiv = document.createElement("div");
+            messageDiv.classList.add("message", sender === 'user' ? 'user-message' : 'ai-message');
+            messageDiv.innerText = text;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function addLoadingMessage() {
+            let chatContainer = document.getElementById("chat-container");
+            let loadingDiv = document.createElement("div");
+            loadingDiv.classList.add("message", "ai-message");
+            loadingDiv.id = "loading-message";
+            loadingDiv.innerText = "גמני מקליד...";
+            chatContainer.appendChild(loadingDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function removeLoadingMessage() {
+            let loadingDiv = document.getElementById("loading-message");
+            if (loadingDiv) loadingDiv.remove();
+        }
+    </script>
+</body>
+</html>
