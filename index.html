@@ -223,9 +223,16 @@
                         "Authorization": `Bearer ${apiKey}`,
                         "Content-Type": "application/json"
                     },
-                    body: JSON.stringify({
-                        model: "llama-3.1-8b-instant",
-                        messages: [{ role: "user", content: userMessage }]
+                   body: JSON.stringify({
+    model: "llama-3.1-8b-instant",
+    messages: [
+        { 
+            role: "system", 
+            content: "אתה עוזר בינה מלאכותית חכם, מנומס ובטוח באתר הצ'אט של דן. חוקים נוקשים שאתה חייב לציית להם: 1. אל תעזור בשום אופן לפרוץ למחשבים, חשבונות, אתרים או משתמשים (כמו רובלוקס, אינסטגרם וכו'). אם מבקשים ממך קוד פריצה או עזרה בפריצה, סרב בנימוס ואמור שאתה לא תומך בפעילויות לא חוקיות. 2. אל תשתף פעולה עם קללות, בריונות, תוכן פוגעני או פגיעה באחרים. 3. ענה תמיד בעברית ברורה, זורמת וידידותית." 
+        },
+        { role: "user", content: userMessage }
+    ]
+})
                     })
                 });
 
