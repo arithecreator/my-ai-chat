@@ -120,7 +120,6 @@
         .message-row.user { background-color: var(--user-msg); }
         .message-row.assistant { background-color: var(--bot-msg); }
         
-        /* הסרנו את האווטארים והמילים "משתמש" ו-"AI" */
         .message-content { flex: 1; line-height: 1.6; word-wrap: break-word; white-space: pre-wrap; padding: 0 5px; }
 
         .message-actions { display: none; position: absolute; left: 15px; bottom: 5px; gap: 8px; background-color: rgba(33, 33, 33, 0.9); padding: 4px 8px; border-radius: 5px; border: 1px solid #444; }
@@ -394,20 +393,17 @@
             });
         }
 
-        // פונקציות ה-3 נקודות (שינוי שם ומחיקה)
         function toggleContextMenu(e, id) {
             e.stopPropagation();
             menuSelectedChatId = id;
             const menu = document.getElementById("global-context-menu");
             
-            // מיקום התפריט ליד הכפתור שלחצו עליו
             const rect = e.target.getBoundingClientRect();
             menu.style.top = `${rect.top + window.scrollY}px`;
             menu.style.left = `${rect.left + window.scrollX + 20}px`;
             menu.style.display = "block";
         }
 
-        // סגירת התפריט בלחיצה מחוץ אליו
         document.addEventListener("click", () => {
             document.getElementById("global-context-menu").style.display = "none";
         });
@@ -467,7 +463,7 @@
             let userMessage = inputElement.value.trim();
             if (!userMessage || isWaitingForBot) return;
 
-            // בדיקת דיסקרטיות למפתח חסר (הודעה כללית ללא אזכור האזור הסודי)
+            // הסתרת הודעת פאנל ניהול לחברים במידה ואין API
             if (!apiKey) { 
                 alert("המערכת נמצאת כעת בתחזוקה זמנית. אנא נסה שוב מאוחר יותר."); 
                 return; 
@@ -520,8 +516,8 @@
                     body: JSON.stringify({
                         model: "llama-3.1-8b-instant",
                         messages: [
-                            // כאן שיפרנו את פקודת המערכת לזיהוי שפה אוטומטי ומיידי
-                            { role: "system", content: "You are SmartBot, a secure AI assistant. CRITICAL: Automatically detect the language of the user's last message and reply IMMEDIATELY and exclusively in that exact same language. Do not explain, do not translate, and do not include English greetings if the user speaks another language. Match their tone and language perfectly." },
+                            // כאן נמצאת פקודת הלייזר החדשה והקשוחה לנעילת שפה אוטומטית ומדויקת
+                            { role: "system", content: "You are SmartBot. STRICT RULE: Look ONLY at the user's very last message. Identify its language (Hebrew, English, etc.) and reply 100% ONLY in that language. NEVER mix languages. If the last message is in Hebrew, your entire response MUST be in Hebrew. If it is in English, your entire response MUST be in English. No exceptions." },
                             ...chatHistory
                         ],
                         temperature: 0.5
@@ -576,7 +572,6 @@
             const row = document.createElement("div");
             row.className = `message-row ${role}`;
             
-            // הורדנו לחלוטין את הבלוק של ה-avatar (המילים משתמש ו-AI נמחקו)
             const content = document.createElement("div");
             content.className = "message-content";
             content.innerText = text;
