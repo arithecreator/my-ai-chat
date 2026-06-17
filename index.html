@@ -294,7 +294,7 @@
                 quotaErr: "❌ Quota quotidien dépassé (30 messages) ! Réinitialisation demain. ⏳",
                 maintenance: "Le système est actuellement en maintenance. Veuillez réessayer plus tard.",
                 rename: "✏️ Renommer", deleteChat: "🗑️ Supprimer", copy: "📋 Copier", edit: "📝 Modifier",
-                promptPrompt: "Entrez le nouveau nom de la discussion :", confirmDelete: "Voulez-vous vraiment supprimer définitivement cette discussion ?",
+                promptPrompt: "Entrez le nouveau nom de la discussion :", confirmDelete: "Voulez-vous vraiment supprimer définitivement cette discussion?",
                 serverErr: "❌ Erreur de serveur, veuillez réessayer plus tard.", connErr: "❌ Erreur de connexion.",
                 gmailOnlyErr: "Erreur : Seuls les comptes Google se terminant par @gmail.com sont autorisés !",
                 forgotSuccess: "Un e-mail de réinitialisation a été envoyé. Vérifiez votre boîte de réception !",
@@ -382,13 +382,20 @@
             updateAuthDOM();
         }
 
+        // פונקציית האימות המעודכנת שמציגה שגיאות מפורשות מגוגל על המסך
         function handleAuth() {
             const email = document.getElementById("auth-email").value.trim();
             const password = document.getElementById("auth-password").value.trim();
             const l = languages[currentLang];
 
-            if(!email || !password) return;
-            if(password.length < 6) return;
+            if(!email || !password) {
+                alert("נא למלא את כל השדות!");
+                return;
+            }
+            if(password.length < 6) {
+                alert("הסיסמה חייבת להיות לפחות 6 תווים!");
+                return;
+            }
 
             // בדיקת אבטחה קשיחה - רק כתובת Gmail אמיתית של גוגל
             if (!email.toLowerCase().endsWith("@gmail.com")) {
@@ -398,10 +405,22 @@
 
             if (isSignUpMode) {
                 auth.createUserWithEmailAndPassword(email, password)
-                    .catch(err => alert(err.message));
+                    .then((userCredential) => {
+                        alert("נרשמת בהצלחה!");
+                    })
+                    .catch(err => {
+                        console.error("Signup Error:", err);
+                        alert("שגיאת הרשמה מגוגל: " + err.message);
+                    });
             } else {
                 auth.signInWithEmailAndPassword(email, password)
-                    .catch(err => alert(err.message));
+                    .then((userCredential) => {
+                        alert("התחברת בהצלחה!");
+                    })
+                    .catch(err => {
+                        console.error("Login Error:", err);
+                        alert("שגיאת התחברות מגוגל: " + err.message);
+                    });
             }
         }
 
@@ -543,7 +562,6 @@
             const rect = e.target.getBoundingClientRect();
             menu.style.top = `${rect.top + window.scrollY}px`;
             
-            // תיקון מיקום התפריט בהתאם לכיוון המסך (RTL או LTR)
             if (languages[currentLang].dir === "rtl") {
                 menu.style.left = `${rect.left + window.scrollX + 20}px`;
             } else {
@@ -583,7 +601,6 @@
             }
         }
 
-        // ביטול הודעת הפתיחה האוטומטית - הדף נפתח נקי לחלוטין!
         function startNewChat() {
             currentConversationId = null;
             editingMessageIndex = null;
@@ -699,9 +716,7 @@
         // --- עזרי תצוגה והעתקה/עריכה ---
         function copyMessage(index) {
             const txt = conversations[currentConversationId].messages[index].content;
-            navigator.clipboard.writeText(txt).then(() => {
-                // העתקה חלקה ללוח
-            });
+            navigator.clipboard.writeText(txt).then(() => {});
         }
 
         function editUserMessage(index) {
