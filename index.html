@@ -302,7 +302,7 @@
             }
         };
 
-        // זיהוי אוטומטי של שפת הדפדפן (ברירת מחדל אנגלית اگر זה לא עברית או צרפתית)
+        // זיהוי אוטומטי של שפת הדפדפן
         let userLang = navigator.language || navigator.userLanguage;
         let currentLang = "en"; 
         if (userLang.startsWith("he")) currentLang = "he";
@@ -314,13 +314,11 @@
             document.getElementById("html-tag").setAttribute("dir", l.dir);
             document.getElementById("html-tag").setAttribute("lang", currentLang);
             
-            // מסך התחברות
             document.getElementById("auth-email").placeholder = l.emailPlaceholder;
             document.getElementById("auth-password").placeholder = l.passwordPlaceholder;
             document.getElementById("auth-forgot-btn").innerText = l.forgotPassword;
             updateAuthDOM();
 
-            // מסך צ'אט
             document.getElementById("lbl-new-chat").innerText = l.newChat;
             document.getElementById("lbl-logout").innerText = l.logout;
             document.getElementById("lbl-quota-text").innerText = l.quotaText;
@@ -342,10 +340,9 @@
         let dailyLimit = 30;
         let menuSelectedChatId = null;
 
-        // הפעלת השפה מיד בטעינה
         applyLanguageStrings();
 
-        // האזנה למצב המשתמש
+        // האזנה למצב המשתמש - כאן מתבצעת העברת המסכים האוטומטית
         auth.onAuthStateChanged(user => {
             if (user) {
                 currentUser = user;
@@ -382,7 +379,7 @@
             updateAuthDOM();
         }
 
-        // פונקציית האימות המעודכנת שמבצעת הרשמה וחיבור ישיר מיד אחר כך
+        // פונקציית האימות הנקייה - מטפלת בהפרדה מוחלטת בין הרשמה להתחברות
         function handleAuth() {
             const email = document.getElementById("auth-email").value.trim();
             const password = document.getElementById("auth-password").value.trim();
@@ -397,7 +394,6 @@
                 return;
             }
 
-            // בדיקת אבטחה קשיחה - רק כתובת Gmail אמיתית של גוגל
             if (!email.toLowerCase().endsWith("@gmail.com")) {
                 alert(l.gmailOnlyErr);
                 return;
@@ -406,9 +402,8 @@
             if (isSignUpMode) {
                 auth.createUserWithEmailAndPassword(email, password)
                     .then((userCredential) => {
-                        alert("נרשמת בהצלחה! מייד תיכנס למערכת...");
-                        // חיבור אוטומטי ישיר לאחר ההרשמה כדי לחסוך הקלדה חוזרת
-                        return auth.signInWithEmailAndPassword(email, password);
+                        alert("נרשמת בהצלחה! המערכת תעביר אותך לצ'אט בעוד רגע...");
+                        // לא מבצעים כאן signIn ידני. Firebase מחברת אוטומטית, ו-onAuthStateChanged יקלוט את זה ויפתח את המסך.
                     })
                     .catch(err => {
                         console.error("Signup Error:", err);
@@ -426,7 +421,6 @@
             }
         }
 
-        // פונקציית שכחתי סיסמה
         function handleForgotPassword() {
             const email = document.getElementById("auth-email").value.trim();
             const l = languages[currentLang];
@@ -770,7 +764,7 @@
         function adjustTextareaHeight(element) { element.style.height = "auto"; element.style.height = (element.scrollHeight) + "px"; }
         function handleKeyPress(event) { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); sendMessage(); } }
 
-        // --- הפעלת פאנל הניהול הראשי בלחיצה כפולה חשאית ---
+        // --- פאנל הניהול הראשי ---
         document.getElementById("header-title").addEventListener("dblclick", () => {
             const password = prompt("הכנס סיסמה:");
             if (password === adminPassword) {
