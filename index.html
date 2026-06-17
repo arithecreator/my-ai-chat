@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="he" dir="rtl" id="html-tag">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartBot 🚀</title>
+    <!-- טעינת ספריות Firebase הרשמיות של גוגל -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
@@ -55,11 +56,15 @@
         }
 
         .auth-container h2 { margin-top: 0; color: var(--accent-color); margin-bottom: 25px; }
-        .auth-input { width: 100%; padding: 12px; margin-bottom: 15px; background: #333; border: 1px solid #555; color: white; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+        .auth-input { width: 100%; padding: 12px; margin-bottom: 15px; background: #333; border: 1px solid #555; color: white; border-radius: 8px; box-sizing: border-box; font-size: 1rem; text-align: inherit; }
         .auth-btn { width: 100%; padding: 12px; background-color: var(--accent-color); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 5px; }
         .auth-btn:hover { background-color: #45a049; }
         .auth-toggle { margin-top: 20px; font-size: 0.9rem; color: #aaa; cursor: pointer; }
         .auth-toggle span { color: var(--accent-color); text-decoration: underline; }
+        
+        /* כפתור שכחתי סיסמה */
+        .forgot-password-link { display: block; margin-top: 12px; font-size: 0.85rem; color: #888; cursor: pointer; text-decoration: none; }
+        .forgot-password-link:hover { color: white; text-decoration: underline; }
 
         /* ממשק הצ'אט הראשי */
         #app-layout { display: none; width: 100%; height: 100%; }
@@ -71,6 +76,7 @@
             display: flex;
             flex-direction: column;
             border-left: 1px solid #333;
+            border-right: 1px solid #333;
             box-sizing: border-box;
         }
 
@@ -80,7 +86,6 @@
             border: 1px solid #444;
             border-radius: 5px;
             padding: 12px;
-            text-align: right;
             cursor: pointer;
             font-weight: bold;
             display: flex;
@@ -92,21 +97,28 @@
 
         #history-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; position: relative; }
         
-        /* עיצוב פריט היסטוריה עם 3 נקודות */
         .history-item-wrapper { position: relative; display: flex; align-items: center; border-radius: 5px; }
         .history-item-wrapper:hover { background-color: var(--btn-hover); }
         
-        .history-item { flex: 1; padding: 10px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.9rem; color: #ccc; padding-left: 30px; text-align: right; }
+        .history-item { flex: 1; padding: 10px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.9rem; color: #ccc; text-align: inherit; }
+        html[dir="rtl"] .history-item { padding-left: 30px; }
+        html[dir="ltr"] .history-item { padding-right: 30px; }
+        
         .history-item-wrapper.active { background-color: var(--btn-hover); }
         .history-item-wrapper.active .history-item { color: white; font-weight: bold; }
         
-        .history-menu-btn { position: absolute; left: 8px; background: transparent; border: none; color: var(--icon-color); cursor: pointer; font-size: 1.1rem; display: none; padding: 2px 6px; border-radius: 4px; }
+        .history-menu-btn { position: absolute; background: transparent; border: none; color: var(--icon-color); cursor: pointer; font-size: 1.1rem; display: none; padding: 2px 6px; border-radius: 4px; }
+        html[dir="rtl"] .history-menu-btn { left: 8px; }
+        html[dir="ltr"] .history-menu-btn { right: 8px; }
+        
         .history-item-wrapper:hover .history-menu-btn { display: block; }
         .history-menu-btn:hover { color: white; background-color: #555; }
 
         /* תפריט אפשרויות צף ל-3 נקודות */
-        .context-menu { display: none; position: absolute; left: 30px; background-color: #2c2c2c; border: 1px solid #444; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 1000; width: 120px; overflow: hidden; }
-        .context-menu button { width: 100%; background: transparent; border: none; color: white; padding: 10px; text-align: right; cursor: pointer; font-size: 0.85rem; display: block; }
+        .context-menu { display: none; position: absolute; background-color: #2c2c2c; border: 1px solid #444; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 1000; width: 140px; overflow: hidden; }
+        .context-menu button { width: 100%; background: transparent; border: none; color: white; padding: 10px; cursor: pointer; font-size: 0.85rem; display: block; }
+        html[dir="rtl"] .context-menu button { text-align: right; }
+        html[dir="ltr"] .context-menu button { text-align: left; }
         .context-menu button:hover { background-color: var(--accent-color); }
 
         #user-profile-info { padding: 10px; border-top: 1px solid #333; font-size: 0.85rem; color: #aaa; display: flex; justify-content: space-between; align-items: center; }
@@ -120,9 +132,11 @@
         .message-row.user { background-color: var(--user-msg); }
         .message-row.assistant { background-color: var(--bot-msg); }
         
-        .message-content { flex: 1; line-height: 1.6; word-wrap: break-word; white-space: pre-wrap; padding: 0 5px; }
+        .message-content { flex: 1; line-height: 1.6; word-wrap: break-word; white-space: pre-wrap; padding: 0 5px; text-align: inherit; }
 
-        .message-actions { display: none; position: absolute; left: 15px; bottom: 5px; gap: 8px; background-color: rgba(33, 33, 33, 0.9); padding: 4px 8px; border-radius: 5px; border: 1px solid #444; }
+        .message-actions { display: none; position: absolute; bottom: 5px; gap: 8px; background-color: rgba(33, 33, 33, 0.9); padding: 4px 8px; border-radius: 5px; border: 1px solid #444; }
+        html[dir="rtl"] .message-actions { left: 15px; }
+        html[dir="ltr"] .message-actions { right: 15px; }
         .message-row:hover .message-actions { display: flex; }
         .action-btn { background: transparent; border: none; color: var(--icon-color); cursor: pointer; padding: 2px; font-size: 0.9rem; }
         .action-btn:hover { color: white; }
@@ -140,13 +154,16 @@
 
         #input-container { background-color: linear-gradient(transparent, var(--chat-bg)); padding: 20px; position: absolute; bottom: 0; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 5px; }
         #input-wrapper { width: 85%; max-width: 800px; background-color: #40414f; border-radius: 12px; box-shadow: 0 0 15px rgba(0,0,0,0.4); display: flex; align-items: center; padding: 8px 15px; gap: 10px; }
-        textarea { flex: 1; padding: 5px; border: none; background-color: transparent; color: white; font-size: 1rem; outline: none; resize: none; max-height: 120px; font-family: inherit; }
-        #send-btn { background-color: transparent; color: var(--icon-color); border: none; cursor: pointer; font-size: 1.2rem; }
+        textarea { flex: 1; padding: 5px; border: none; background-color: transparent; color: white; font-size: 1rem; outline: none; resize: none; max-height: 120px; font-family: inherit; text-align: inherit; }
+        #send-btn { background-color: transparent; color: var(--icon-color); border: none; cursor: pointer; font-size: 1.2rem; transform: scaleX(1); }
+        html[dir="rtl"] #send-btn { transform: scaleX(-1); }
         #send-btn:hover:not(:disabled) { color: var(--accent-color); }
         #send-btn:disabled { opacity: 0.2; cursor: not-allowed; }
         #quota-error-text { color: var(--error-color); font-size: 0.85rem; font-weight: bold; display: none; }
 
-        #admin-panel { display: none; position: fixed; top: 0; right: 260px; width: 320px; height: 100vh; background-color: #222; border-left: 2px solid #444; padding: 25px; box-sizing: border-box; z-index: 10000; }
+        #admin-panel { display: none; position: fixed; top: 0; width: 320px; height: 100vh; background-color: #222; padding: 25px; box-sizing: border-box; z-index: 10000; border-left: 2px solid #444; border-right: 2px solid #444; }
+        html[dir="rtl"] #admin-panel { right: 260px; }
+        html[dir="ltr"] #admin-panel { left: 260px; }
         #admin-panel h3 { margin-top: 0; border-bottom: 2px solid #444; padding-bottom: 10px; color: var(--accent-color); }
         .admin-group { margin-bottom: 20px; }
         .admin-group label { display: block; margin-bottom: 8px; font-size: 0.9rem; color: #ccc; }
@@ -157,45 +174,50 @@
 </head>
 <body>
 
+    <!-- מסך כניסה / הרשמה -->
     <div id="auth-screen">
         <div class="auth-container">
             <h2 id="auth-title">התחברות ל-SmartBot</h2>
             <input type="email" id="auth-email" class="auth-input" placeholder="כתובת אימייל">
             <input type="password" id="auth-password" class="auth-input" placeholder="סיסמה (לפחות 6 תווים)">
             <button id="auth-submit-btn" class="auth-btn" onclick="handleAuth()">התחבר</button>
+            <div class="forgot-password-link" id="auth-forgot-btn" onclick="handleForgotPassword()">שכחת את הסיסמה?</div>
             <div class="auth-toggle" onclick="toggleAuthMode()">אין לך חשבון? <span id="auth-toggle-text">להרשמה מהירה</span></div>
         </div>
     </div>
 
+    <!-- תפריט 3 נקודות צף גלובלי -->
     <div id="global-context-menu" class="context-menu">
-        <button onclick="triggerRenameChat()">✏️ שנה שם</button>
-        <button onclick="triggerDeleteChat()" style="color: var(--error-color);">🗑️ מחק שיחה</button>
+        <button id="menu-rename-btn" onclick="triggerRenameChat()">✏️ שנה שם</button>
+        <button id="menu-delete-btn" onclick="triggerDeleteChat()" style="color: var(--error-color);">🗑️ מחק שיחה</button>
     </div>
 
+    <!-- המבנה הראשי של האפליקציה -->
     <div id="app-layout">
         <div id="sidebar">
-            <button id="new-chat-btn" onclick="startNewChat()">שיחה חדשה <span>+</span></button>
+            <button id="new-chat-btn" onclick="startNewChat()"><span id="lbl-new-chat">שיחה חדשה</span> <span>+</span></button>
             <div id="history-list"></div>
             <div id="user-profile-info">
                 <span id="user-email-display">---</span>
-                <span class="logout-link" onclick="logout()">התנתק</span>
+                <span id="lbl-logout" class="logout-link" onclick="logout()">התנתק</span>
             </div>
         </div>
 
         <div id="main-chat">
-            <div id="limit-banner">הודעות שנוצלו היום: <span id="quota-used-banner">0</span> מתוך 30</div>
+            <div id="limit-banner"><span id="lbl-quota-text">הודעות שנוצלו היום:</span> <span id="quota-used-banner">0</span> מתוך 30</div>
             <header id="header-title" title="SmartBot">SmartBot 🚀</header>
             <div id="chat-container"></div>
             <div id="input-container">
                 <div id="input-wrapper">
                     <textarea id="user-input" placeholder="שלח הודעה ל-SmartBot..." rows="1" oninput="adjustTextareaHeight(this)" onkeypress="handleKeyPress(event)"></textarea>
-                    <button id="send-btn" onclick="sendMessage()" disabled>&#10148;</button>
+                    <button id="send-btn" onclick="sendMessage()">&#10148;</button>
                 </div>
                 <div id="quota-error-text">❌ עברת את המכסה היומית שלך (30 הודעות)! המערכת תתאפס מחר. ⏳</div>
             </div>
         </div>
     </div>
 
+    <!-- פאנל ניהול סודי -->
     <div id="admin-panel">
         <h3>🔑 הגדרות ניהול SmartBot</h3>
         <div class="admin-group"><label>מפתח Groq API:</label><input type="text" id="api-key-input" placeholder="gsk_..."></div>
@@ -222,6 +244,92 @@
         const auth = firebase.auth();
         const database = firebase.database();
 
+        // מילון שפות אוטומטי לממשק האתר
+        const languages = {
+            he: {
+                dir: "rtl",
+                loginTitle: "התחברות ל-SmartBot", signupTitle: "הרשמה ל-SmartBot",
+                emailPlaceholder: "כתובת אימייל", passwordPlaceholder: "סיסמה (לפחות 6 תווים)",
+                loginBtn: "התחבר", signupBtn: "הרשם כעת",
+                noAccount: "אין לך חשבון? ", quickSignup: "להרשמה מהירה",
+                hasAccount: "כבר יש לך חשבון? ", quickLogin: "להתחברות מהירה",
+                forgotPassword: "שכחת את הסיסמה?", inputPlaceholder: "שלח הודעה ל-SmartBot...",
+                newChat: "שיחה חדשה", logout: "התנתק", quotaText: "הודעות שנוצלו היום:",
+                quotaErr: "❌ עברת את המכסה היומית שלך (30 הודעות)! המערכת תתאפס מחר. ⏳",
+                maintenance: "המערכת נמצאת כעת בתחזוקה זמנית. אנא נסה שוב מאוחר יותר.",
+                rename: "✏️ שנה שם", deleteChat: "🗑️ מחק שיחה", copy: "📋 העתק", edit: "📝 ערוך",
+                promptPrompt: "הכנס שם חדש לשיחה:", confirmDelete: "האם אתה בטוח שברצונך למחוק את השיחה הזו לצמיתות?",
+                serverErr: "❌ תקלה בשרת, אנא נסה שוב מאוחר יותר.", connErr: "❌ תקלה בתקשורת.",
+                gmailOnlyErr: "שגיאה: ניתן להירשם אך ורק עם חשבון גוגל אמיתי המסתיים ב-@gmail.com!",
+                forgotSuccess: "שלחנו לך כעת אימייל מאובטח לאיפוס הסיסמה. בדוק את תיבת הדואר שלך!",
+                forgotAlertEmail: "אנא הזן את כתובת ה-Gmail שלך בשדה למעלה כדי לקבל לינק לאיפוס."
+            },
+            en: {
+                dir: "ltr",
+                loginTitle: "Login to SmartBot", signupTitle: "Sign Up for SmartBot",
+                emailPlaceholder: "Email Address", passwordPlaceholder: "Password (Min 6 chars)",
+                loginBtn: "Login", signupBtn: "Sign Up",
+                noAccount: "Don't have an account? ", quickSignup: "Sign up fast",
+                hasAccount: "Already have an account? ", quickLogin: "Login fast",
+                forgotPassword: "Forgot password?", inputPlaceholder: "Send a message to SmartBot...",
+                newChat: "New Chat", logout: "Logout", quotaText: "Messages used today:",
+                quotaErr: "❌ You have exceeded your daily quota (30 messages)! Resets tomorrow. ⏳",
+                maintenance: "The system is currently undergoing maintenance. Please try again later.",
+                rename: "✏️ Rename", deleteChat: "🗑️ Delete Chat", copy: "📋 Copy", edit: "📝 Edit",
+                promptPrompt: "Enter new conversation name:", confirmDelete: "Are you sure you want to permanently delete this chat?",
+                serverErr: "❌ Server error, please try again later.", connErr: "❌ Connection error.",
+                gmailOnlyErr: "Error: You can only register using a valid Google account ending with @gmail.com!",
+                forgotSuccess: "A password reset link has been sent to your email. Check your inbox!",
+                forgotAlertEmail: "Please enter your Gmail address in the field above first."
+            },
+            fr: {
+                dir: "ltr",
+                loginTitle: "Connexion à SmartBot", signupTitle: "Inscription à SmartBot",
+                emailPlaceholder: "Adresse e-mail", passwordPlaceholder: "Mot de passe (Min 6 caractères)",
+                loginBtn: "Se connecter", signupBtn: "S'inscrire",
+                noAccount: "Pas de compte ? ", quickSignup: "S'inscrire rapidement",
+                hasAccount: "Déjà un compte ? ", quickLogin: "Se connecter",
+                forgotPassword: "Mot de passe oublié ?", inputPlaceholder: "Envoyez un message à SmartBot...",
+                newChat: "Nouvelle discussion", logout: "Déconnexion", quotaText: "Messages utilisés aujourd'hui :",
+                quotaErr: "❌ Quota quotidien dépassé (30 messages) ! Réinitialisation demain. ⏳",
+                maintenance: "Le système est actuellement en maintenance. Veuillez réessayer plus tard.",
+                rename: "✏️ Renommer", deleteChat: "🗑️ Supprimer", copy: "📋 Copier", edit: "📝 Modifier",
+                promptPrompt: "Entrez le nouveau nom de la discussion :", confirmDelete: "Voulez-vous vraiment supprimer définitivement cette discussion ?",
+                serverErr: "❌ Erreur de serveur, veuillez réessayer plus tard.", connErr: "❌ Erreur de connexion.",
+                gmailOnlyErr: "Erreur : Seuls les comptes Google se terminant par @gmail.com sont autorisés !",
+                forgotSuccess: "Un e-mail de réinitialisation a été envoyé. Vérifiez votre boîte de réception !",
+                forgotAlertEmail: "Veuillez d'abord saisir votre adresse Gmail dans le champ ci-dessus."
+            }
+        };
+
+        // זיהוי אוטומטי של שפת הדפדפן (ברירת מחדל אנגלית אם זה לא עברית או צרפתית)
+        let userLang = navigator.language || navigator.userLanguage;
+        let currentLang = "en"; 
+        if (userLang.startsWith("he")) currentLang = "he";
+        else if (userLang.startsWith("fr")) currentLang = "fr";
+
+        // הפעלת לוקליזציה לשפה הנבחרת
+        function applyLanguageStrings() {
+            const l = languages[currentLang];
+            document.getElementById("html-tag").setAttribute("dir", l.dir);
+            document.getElementById("html-tag").setAttribute("lang", currentLang);
+            
+            // מסך התחברות
+            document.getElementById("auth-email").placeholder = l.emailPlaceholder;
+            document.getElementById("auth-password").placeholder = l.passwordPlaceholder;
+            document.getElementById("auth-forgot-btn").innerText = l.forgotPassword;
+            updateAuthDOM();
+
+            // מסך צ'אט
+            document.getElementById("lbl-new-chat").innerText = l.newChat;
+            document.getElementById("lbl-logout").innerText = l.logout;
+            document.getElementById("lbl-quota-text").innerText = l.quotaText;
+            document.getElementById("quota-error-text").innerText = l.quotaErr;
+            document.getElementById("user-input").placeholder = l.inputPlaceholder;
+            document.getElementById("menu-rename-btn").innerText = l.rename;
+            document.getElementById("menu-delete-btn").innerText = l.deleteChat;
+        }
+
         // משתנים גלובליים
         let apiKey = "";
         let siteName = "SmartBot 🚀";
@@ -233,6 +341,9 @@
         let isSignUpMode = false;
         let dailyLimit = 30;
         let menuSelectedChatId = null;
+
+        // הפעלת השפה מיד בטעינה
+        applyLanguageStrings();
 
         // האזנה למצב המשתמש
         auth.onAuthStateChanged(user => {
@@ -253,28 +364,62 @@
         });
 
         // --- ניהול כניסה והרשמה ---
+        function updateAuthDOM() {
+            const l = languages[currentLang];
+            if (isSignUpMode) {
+                document.getElementById("auth-title").innerText = l.signupTitle;
+                document.getElementById("auth-submit-btn").innerText = l.signupBtn;
+                document.getElementById("auth-toggle").innerHTML = `${l.hasAccount} <span>${l.quickLogin}</span>`;
+            } else {
+                document.getElementById("auth-title").innerText = l.loginTitle;
+                document.getElementById("auth-submit-btn").innerText = l.loginBtn;
+                document.getElementById("auth-toggle").innerHTML = `${l.noAccount} <span>${l.quickSignup}</span>`;
+            }
+        }
+
         function toggleAuthMode() {
             isSignUpMode = !isSignUpMode;
-            document.getElementById("auth-title").innerText = isSignUpMode ? "הרשמה ל-SmartBot" : "התחברות ל-SmartBot";
-            document.getElementById("auth-submit-btn").innerText = isSignUpMode ? "הרשם כעת" : "התחבר";
-            document.getElementById("auth-toggle-text").innerText = isSignUpMode ? "להתחברות מהירה" : "להרשמה מהירה";
+            updateAuthDOM();
         }
 
         function handleAuth() {
             const email = document.getElementById("auth-email").value.trim();
             const password = document.getElementById("auth-password").value.trim();
+            const l = languages[currentLang];
 
-            if(!email || !password) { alert("נא למלא את כל השדות!"); return; }
-            if(password.length < 6) { alert("הסיסמה חייבת להיות לפחות 6 תווים!"); return; }
+            if(!email || !password) return;
+            if(password.length < 6) return;
+
+            // בדיקת אבטחה קשיחה - רק כתובת Gmail אמיתית של גוגל
+            if (!email.toLowerCase().endsWith("@gmail.com")) {
+                alert(l.gmailOnlyErr);
+                return;
+            }
 
             if (isSignUpMode) {
                 auth.createUserWithEmailAndPassword(email, password)
-                    .then(() => alert("החשבון נפתח בהצלחה! ברוך הבא 😊"))
-                    .catch(err => alert("שגיאה בהרשמה: " + err.message));
+                    .catch(err => alert(err.message));
             } else {
                 auth.signInWithEmailAndPassword(email, password)
-                    .catch(err => alert("שגיאה בהתחברות: " + err.message));
+                    .catch(err => alert(err.message));
             }
+        }
+
+        // פונקציית שכחתי סיסמה - שולחת אימייל שחזור רשמי של גוגל
+        function handleForgotPassword() {
+            const email = document.getElementById("auth-email").value.trim();
+            const l = languages[currentLang];
+            
+            if (!email) {
+                alert(l.forgotAlertEmail);
+                return;
+            }
+            
+            auth.sendPasswordResetEmail(email)
+                .then(() => {
+                    alert(l.forgotSuccess);
+                })
+                .catch(err => alert(err.message));
         }
 
         function logout() { auth.signOut(); }
@@ -291,7 +436,6 @@
             document.title = siteName;
         }
 
-        // --- ניהול מכסות הודעות אישיות לפי משתמש ---
         function getTodayKey() {
             const d = new Date();
             return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
@@ -340,8 +484,6 @@
             document.getElementById("user-input").disabled = shouldLock;
             document.getElementById("send-btn").disabled = shouldLock;
             document.getElementById("quota-error-text").style.display = shouldLock ? "block" : "none";
-            if(shouldLock) document.getElementById("user-input").placeholder = "חסום! עברת את המכסה היומית שלך.";
-            else document.getElementById("user-input").placeholder = "שלח הודעה ל-SmartBot...";
         }
 
         // --- מערכת הצ'אט וההיסטוריה ---
@@ -400,7 +542,13 @@
             
             const rect = e.target.getBoundingClientRect();
             menu.style.top = `${rect.top + window.scrollY}px`;
-            menu.style.left = `${rect.left + window.scrollX + 20}px`;
+            
+            // תיקון מיקום התפריט בהתאם לכיוון המסך (RTL או LTR)
+            if (languages[currentLang].dir === "rtl") {
+                menu.style.left = `${rect.left + window.scrollX + 20}px`;
+            } else {
+                menu.style.left = `${rect.left + window.scrollX - 120}px`;
+            }
             menu.style.display = "block";
         }
 
@@ -410,8 +558,9 @@
 
         function triggerRenameChat() {
             if (!menuSelectedChatId) return;
+            const l = languages[currentLang];
             const oldName = conversations[menuSelectedChatId].title;
-            const newName = prompt("הכנס שם חדש לשיחה:", oldName);
+            const newName = prompt(l.promptPrompt, oldName);
             if (newName && newName.trim() !== "") {
                 conversations[menuSelectedChatId].title = newName.trim();
                 localStorage.setItem(`groq_convs_${currentUser.uid}`, JSON.stringify(conversations));
@@ -421,7 +570,8 @@
 
         function triggerDeleteChat() {
             if (!menuSelectedChatId) return;
-            if (confirm("האם אתה בטוח שברצונך למחוק את השיחה הזו לצמיתות?")) {
+            const l = languages[currentLang];
+            if (confirm(l.confirmDelete)) {
                 delete conversations[menuSelectedChatId];
                 localStorage.setItem(`groq_convs_${currentUser.uid}`, JSON.stringify(conversations));
                 
@@ -433,12 +583,12 @@
             }
         }
 
+        // ביטול הודעת הפתיחה האוטומטית - הדף נפתח נקי לחלוטין!
         function startNewChat() {
             currentConversationId = null;
             editingMessageIndex = null;
             document.getElementById("chat-container").innerHTML = "";
             
-            appendMessageRow("היי! אני SmartBot, העוזר החכם והפרטי שלך. המכסה האישית שלך מוכנה. במה אוכל לעזור היום? 😊", "assistant");
             renderHistoryList();
             updateQuotaDisplayOnly();
             document.getElementById("user-input").value = "";
@@ -461,11 +611,11 @@
         async function sendMessage() {
             const inputElement = document.getElementById("user-input");
             let userMessage = inputElement.value.trim();
+            const l = languages[currentLang];
             if (!userMessage || isWaitingForBot) return;
 
-            // הסתרת הודעת פאנל ניהול לחברים במידה ואין API
             if (!apiKey) { 
-                alert("המערכת נמצאת כעת בתחזוקה זמנית. אנא נסה שוב מאוחר יותר."); 
+                alert(l.maintenance); 
                 return; 
             }
 
@@ -516,8 +666,7 @@
                     body: JSON.stringify({
                         model: "llama-3.1-8b-instant",
                         messages: [
-                            // כאן נמצאת פקודת הלייזר החדשה והקשוחה לנעילת שפה אוטומטית ומדויקת
-                            { role: "system", content: "You are SmartBot. STRICT RULE: Look ONLY at the user's very last message. Identify its language (Hebrew, English, etc.) and reply 100% ONLY in that language. NEVER mix languages. If the last message is in Hebrew, your entire response MUST be in Hebrew. If it is in English, your entire response MUST be in English. No exceptions." },
+                            { role: "system", content: "You are SmartBot. STRICT RULE: Look ONLY at the user's very last message. Identify its language (Hebrew, English, French, etc.) and reply 100% ONLY in that language. NEVER mix languages. No exceptions." },
                             ...chatHistory
                         ],
                         temperature: 0.5
@@ -537,20 +686,22 @@
                     
                     localStorage.setItem(`groq_convs_${currentUser.uid}`, JSON.stringify(conversations));
                 } else {
-                    appendMessageRow("❌ תקלה בשרת, אנא נסה שוב מאוחר יותר.", "error");
+                    appendMessageRow(l.serverErr, "error");
                 }
 
             } catch (error) {
                 if(document.getElementById(loadingId)) document.getElementById(loadingId).remove();
                 isWaitingForBot = false;
-                appendMessageRow("❌ תקלה בתקשורת.", "error");
+                appendMessageRow(l.connErr, "error");
             }
         }
 
         // --- עזרי תצוגה והעתקה/עריכה ---
         function copyMessage(index) {
             const txt = conversations[currentConversationId].messages[index].content;
-            navigator.clipboard.writeText(txt).then(() => alert("הועתק ללוח! 📋"));
+            navigator.clipboard.writeText(txt).then(() => {
+                // העתקה חלקה ללוח
+            });
         }
 
         function editUserMessage(index) {
@@ -577,11 +728,12 @@
             content.innerText = text;
             row.appendChild(content);
             
+            const l = languages[currentLang];
             if ((role === "user" || role === "assistant") && index !== null) {
                 const actions = document.createElement("div");
                 actions.className = "message-actions";
-                const copyBtn = document.createElement("button"); copyBtn.className = "action-btn"; copyBtn.innerHTML = "📋 העתק"; copyBtn.onclick = () => copyMessage(index); actions.appendChild(copyBtn);
-                if (role === "user") { const editBtn = document.createElement("button"); editBtn.className = "action-btn"; editBtn.innerHTML = "📝 ערוך"; editBtn.onclick = () => editUserMessage(index); actions.appendChild(editBtn); }
+                const copyBtn = document.createElement("button"); copyBtn.className = "action-btn"; copyBtn.innerHTML = `${l.copy}`; copyBtn.onclick = () => copyMessage(index); actions.appendChild(copyBtn);
+                if (role === "user") { const editBtn = document.createElement("button"); editBtn.className = "action-btn"; editBtn.innerHTML = `${l.edit}`; editBtn.onclick = () => editUserMessage(index); actions.appendChild(editBtn); }
                 row.appendChild(actions);
             }
             chatContainer.appendChild(row);
