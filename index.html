@@ -302,7 +302,7 @@
             }
         };
 
-        // זיהוי אוטומטי של שפת הדפדפן (ברירת מחדל אנגלית אם זה לא עברית או צרפתית)
+        // זיהוי אוטומטי של שפת הדפדפן (ברירת מחדל אנגלית اگر זה לא עברית או צרפתית)
         let userLang = navigator.language || navigator.userLanguage;
         let currentLang = "en"; 
         if (userLang.startsWith("he")) currentLang = "he";
@@ -382,7 +382,7 @@
             updateAuthDOM();
         }
 
-        // פונקציית האימות המעודכנת שמציגה שגיאות מפורשות מגוגל על המסך
+        // פונקציית האימות המעודכנת שמבצעת הרשמה וחיבור ישיר מיד אחר כך
         function handleAuth() {
             const email = document.getElementById("auth-email").value.trim();
             const password = document.getElementById("auth-password").value.trim();
@@ -406,7 +406,9 @@
             if (isSignUpMode) {
                 auth.createUserWithEmailAndPassword(email, password)
                     .then((userCredential) => {
-                        alert("נרשמת בהצלחה!");
+                        alert("נרשמת בהצלחה! מייד תיכנס למערכת...");
+                        // חיבור אוטומטי ישיר לאחר ההרשמה כדי לחסוך הקלדה חוזרת
+                        return auth.signInWithEmailAndPassword(email, password);
                     })
                     .catch(err => {
                         console.error("Signup Error:", err);
@@ -424,7 +426,7 @@
             }
         }
 
-        // פונקציית שכחתי סיסמה - שולחת אימייל שחזור רשמי של גוגל
+        // פונקציית שכחתי סיסמה
         function handleForgotPassword() {
             const email = document.getElementById("auth-email").value.trim();
             const l = languages[currentLang];
