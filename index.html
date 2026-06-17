@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartBot 🚀</title>
-    <!-- טעינת ספריות Firebase הרשמיות של גוגל -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
@@ -174,7 +173,6 @@
 </head>
 <body>
 
-    <!-- מסך כניסה / הרשמה -->
     <div id="auth-screen">
         <div class="auth-container">
             <h2 id="auth-title">התחברות ל-SmartBot</h2>
@@ -182,17 +180,15 @@
             <input type="password" id="auth-password" class="auth-input" placeholder="סיסמה (לפחות 6 תווים)">
             <button id="auth-submit-btn" class="auth-btn" onclick="handleAuth()">התחבר</button>
             <div class="forgot-password-link" id="auth-forgot-btn" onclick="handleForgotPassword()">שכחת את הסיסמה?</div>
-            <div class="auth-toggle" onclick="toggleAuthMode()">אין לך חשבון? <span id="auth-toggle-text">להרשמה מהירה</span></div>
+            <div id="auth-toggle" class="auth-toggle" onclick="toggleAuthMode()">אין לך חשבון? <span id="auth-toggle-text">להרשמה מהירה</span></div>
         </div>
     </div>
 
-    <!-- תפריט 3 נקודות צף גלובלי -->
     <div id="global-context-menu" class="context-menu">
         <button id="menu-rename-btn" onclick="triggerRenameChat()">✏️ שנה שם</button>
         <button id="menu-delete-btn" onclick="triggerDeleteChat()" style="color: var(--error-color);">🗑️ מחק שיחה</button>
     </div>
 
-    <!-- המבנה הראשי של האפליקציה -->
     <div id="app-layout">
         <div id="sidebar">
             <button id="new-chat-btn" onclick="startNewChat()"><span id="lbl-new-chat">שיחה חדשה</span> <span>+</span></button>
@@ -217,7 +213,6 @@
         </div>
     </div>
 
-    <!-- פאנל ניהול סודי -->
     <div id="admin-panel">
         <h3>🔑 הגדרות ניהול SmartBot</h3>
         <div class="admin-group"><label>מפתח Groq API:</label><input type="text" id="api-key-input" placeholder="gsk_..."></div>
@@ -342,7 +337,7 @@
 
         applyLanguageStrings();
 
-        // האזנה למצב המשתמש - כאן מתבצעת העברת המסכים האוטומטית
+        // האזנה למצב המשתמש - מעביר למסך הצ'אט ברגע שיש חיבור פעיל
         auth.onAuthStateChanged(user => {
             if (user) {
                 currentUser = user;
@@ -363,14 +358,17 @@
         // --- ניהול כניסה והרשמה ---
         function updateAuthDOM() {
             const l = languages[currentLang];
+            const toggleElement = document.getElementById("auth-toggle");
+            if(!toggleElement) return; // הגנה מפני קריסות זמניות בטעינה
+
             if (isSignUpMode) {
                 document.getElementById("auth-title").innerText = l.signupTitle;
                 document.getElementById("auth-submit-btn").innerText = l.signupBtn;
-                document.getElementById("auth-toggle").innerHTML = `${l.hasAccount} <span>${l.quickLogin}</span>`;
+                toggleElement.innerHTML = `${l.hasAccount} <span id="auth-toggle-text">${l.quickLogin}</span>`;
             } else {
                 document.getElementById("auth-title").innerText = l.loginTitle;
                 document.getElementById("auth-submit-btn").innerText = l.loginBtn;
-                document.getElementById("auth-toggle").innerHTML = `${l.noAccount} <span>${l.quickSignup}</span>`;
+                toggleElement.innerHTML = `${l.noAccount} <span id="auth-toggle-text">${l.quickSignup}</span>`;
             }
         }
 
@@ -379,7 +377,7 @@
             updateAuthDOM();
         }
 
-        // פונקציית האימות הנקייה - מטפלת בהפרדה מוחלטת בין הרשמה להתחברות
+        // פונקציית האימות המלאה והנקייה משגיאות
         function handleAuth() {
             const email = document.getElementById("auth-email").value.trim();
             const password = document.getElementById("auth-password").value.trim();
@@ -403,7 +401,6 @@
                 auth.createUserWithEmailAndPassword(email, password)
                     .then((userCredential) => {
                         alert("נרשמת בהצלחה! המערכת תעביר אותך לצ'אט בעוד רגע...");
-                        // לא מבצעים כאן signIn ידני. Firebase מחברת אוטומטית, ו-onAuthStateChanged יקלוט את זה ויפתח את המסך.
                     })
                     .catch(err => {
                         console.error("Signup Error:", err);
@@ -764,7 +761,7 @@
         function adjustTextareaHeight(element) { element.style.height = "auto"; element.style.height = (element.scrollHeight) + "px"; }
         function handleKeyPress(event) { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); sendMessage(); } }
 
-        // --- פאנל הניהול הראשי ---
+        // --- פאנל הניהול הראשי בלחיצה כפולה ---
         document.getElementById("header-title").addEventListener("dblclick", () => {
             const password = prompt("הכנס סיסמה:");
             if (password === adminPassword) {
