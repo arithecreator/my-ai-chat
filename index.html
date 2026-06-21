@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartBot 🚀</title>
-    <!-- טעינת ספריות Firebase הרשמיות של גוגל -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
@@ -177,7 +176,6 @@
 </head>
 <body>
 
-    <!-- מסך כניסה / הרשמה -->
     <div id="auth-screen">
         <div class="auth-container">
             <h2 id="auth-title">התחברות ל-SmartBot</h2>
@@ -189,13 +187,11 @@
         </div>
     </div>
 
-    <!-- תפריט 3 נקודות צף גלובלי -->
     <div id="global-context-menu" class="context-menu">
         <button id="menu-rename-btn" onclick="triggerRenameChat()">✏️ שנה שם</button>
         <button id="menu-delete-btn" onclick="triggerDeleteChat()" style="color: var(--error-color);">🗑️ מחק שיחה</button>
     </div>
 
-    <!-- המבנה הראשי של האפליקציה -->
     <div id="app-layout">
         <div id="sidebar">
             <button id="new-chat-btn" onclick="startNewChat()"><span id="lbl-new-chat">שיחה חדשה</span> <span>+</span></button>
@@ -220,7 +216,6 @@
         </div>
     </div>
 
-    <!-- פאנל ניהול סודי -->
     <div id="admin-panel">
         <h3>🔑 הגדרות ניהול SmartBot</h3>
         <div class="admin-group"><label>מפתח Groq API:</label><input type="text" id="api-key-input" placeholder="gsk_..."></div>
@@ -547,7 +542,7 @@
             renderHistoryList(); updateQuotaDisplayOnly();
         }
 
-        // --- 🌐 פונקציית עזר לביצוע חיפוש חי בגוגל/ברווז ---
+        // --- 🌐 פונקציית עזר לביצוע חיפוש חי DuckDuckGo ---
         async function fetchWebSearch(query) {
             try {
                 const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(query))}`);
@@ -611,16 +606,25 @@
 
             if (!apiKey) { alert(l.maintenance); if(document.getElementById(loadingId)) document.getElementById(loadingId).remove(); isWaitingForBot = false; return; }
 
-            // ניקוי זיכרון תמונות ישן
+            // === [תיקון קריסה] בניית היסטוריית ה-Chat בצורה נקייה ומאובטחת ===
             const chatHistory = conversations[currentConversationId].messages.slice(-12).map(msg => {
                 let cleanContent = msg.content;
                 if (msg.role === "assistant" && msg.mediaUrl) {
-                    cleanContent = `[System Log: Media generated here. Prompt context: ${msg.content}]`;
+                    cleanContent = `[System Log: Visual media was shown to user here. Descriptive context: ${msg.content}]`;
                 }
                 return { role: msg.role, content: cleanContent };
             });
 
-            // 1. זרימת יצירת מדיה (תמונות/סרטונים)
+            // 1. 🌐 חיפוש חי ברשת (DuckDuckGo) כדי לקבל רקע עדכני
+            let searchResultsText = "";
+            const isQuestionOrEntity = userMessage.length > 3 && !lowerMsg.includes("היי") && !lowerMsg.includes("שלום") && !lowerMsg.includes("מה קורה");
+            
+            if (isQuestionOrEntity) {
+                searchResultsText = await fetchWebSearch(userMessage);
+            }
+
+            // === 💡 [תיקון פרומפט המדיה] שימוש ב-Groq כדי לכתוב תיאור גרפי מדויק באנגלית ===
+            let finalImagePrompt = "";
             if (wantsImage || wantsVideo) {
                 try {
                     const promptGenerationResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -629,8 +633,15 @@
                         body: JSON.stringify({
                             model: "llama-3.3-70b-versatile",
                             messages: [
-                                { role: "system", content: "You are a prompt engineer for an AI image generator. Generate a highly detailed descriptive prompt in English based on history. Output ONLY English text." },
-                                ...chatHistory
+                                { 
+                                    role: "system", 
+                                    content: "You are a prompt engineer for an AI image generator. Look at the conversation history, user's input, and Google search results (if available). Generate a highly detailed descriptive graphic prompt in English representing what the user wants to see. ALWAYS utilize the broad knowledge provided by the Google search results to make the prompt accurate. Output ONLY English descriptive text." 
+                                },
+                                ...chatHistory,
+                                {
+                                    role: "user",
+                                    content: `Current User Request: "${userMessage}"\nDuckDuckGo Context: "${searchResultsText}"`
+                                }
                             ],
                             temperature: 0.5
                         })
@@ -638,38 +649,36 @@
 
                     if (promptGenerationResponse.ok) {
                         const promptData = await promptGenerationResponse.json();
-                        let translatedPrompt = promptData.choices[0].message.content.trim().replace(/^"|"$/g, '');
-                        if(!translatedPrompt) translatedPrompt = "playground";
-
-                        const encodedPrompt = encodeURIComponent(translatedPrompt);
-                        let mediaType = wantsImage ? "image" : "video";
-                        let mediaUrl = wantsImage ? `https://image.pollinations.ai/p/${encodedPrompt}?width=1024&height=1024&nologo=true&enhance=true&seed=${Math.floor(Math.random()*100000)}` : `https://image.pollinations.ai/p/${encodedPrompt}?width=800&height=600&enhance=true&feed=true&seed=${Math.floor(Math.random()*100000)}`;
-                        let botReplyText = wantsImage ? `🎨 הנה מה שביקשת! \n\n**הפרומפט שנוצר:** "${translatedPrompt}"` : `🎬 הנה האנימציה שביקשת! \n\n**הפרומפט שנוצר:** "${translatedPrompt}"`;
-
-                        if(document.getElementById(loadingId)) document.getElementById(loadingId).remove();
-                        isWaitingForBot = false;
-
-                        const botIndex = conversations[currentConversationId].messages.length;
-                        conversations[currentConversationId].messages.push({ role: "assistant", content: botReplyText, mediaType: mediaType, mediaUrl: mediaUrl });
-                        appendMessageRow(botReplyText, "assistant", botIndex, mediaType, mediaUrl);
-                        localStorage.setItem(`groq_convs_${currentUser.uid}`, JSON.stringify(conversations));
-                        return;
+                        finalImagePrompt = promptData.choices[0].message.content.trim().replace(/^"|"$/g, '');
                     }
-                } catch (e) { console.error(e); }
+                } catch (e) {
+                    console.error("Contextual prompt generation failed", e);
+                }
+                
+                // fallback אם הפרומפט נכשל
+                if (!finalImagePrompt) {
+                    finalImagePrompt = userMessage.replace(/(?:^|\s)(תמונה|תצייר|צייר|סרטון|וידאו|סרט|תיצור|תייצר|תרכיב|תעשה|תכין|לי|של|שלי|בשבילי)(?=\s|$)/gi, "").trim() || "playground";
+                }
+
+                // 2. יצירת המדיה מהפרומפט האנגלי הנקי
+                const encodedPrompt = encodeURIComponent(finalImagePrompt);
+                let mediaType = wantsImage ? "image" : "video";
+                let mediaUrl = wantsImage ? `https://image.pollinations.ai/p/${encodedPrompt}?width=1024&height=1024&nologo=true&enhance=true&seed=${Math.floor(Math.random()*100000)}` : `https://image.pollinations.ai/p/${encodedPrompt}?width=800&height=600&enhance=true&feed=true&seed=${Math.floor(Math.random()*100000)}`;
+                let botReplyText = wantsImage ? `🎨 הנה מה שביקשת! \n\n**הפרומפט שנוצר:** "${finalImagePrompt}"` : `🎬 הנה האנימציה שביקשת! \n\n**הפרומפט שנוצר:** "${finalImagePrompt}"`;
+
+                if(document.getElementById(loadingId)) document.getElementById(loadingId).remove();
+                isWaitingForBot = false;
+
+                const botIndex = conversations[currentConversationId].messages.length;
+                conversations[currentConversationId].messages.push({ role: "assistant", content: botReplyText, mediaType: mediaType, mediaUrl: mediaUrl });
+                appendMessageRow(botReplyText, "assistant", botIndex, mediaType, mediaUrl);
+                localStorage.setItem(`groq_convs_${currentUser.uid}`, JSON.stringify(conversations));
                 return;
             }
 
-            // 2. 🌐 זרימת טקסט חכמה עם חיפוש חי בגוגל (Web Search)
-            let searchResultsText = "";
-            const isQuestionOrEntity = userMessage.length > 3 && !lowerMsg.includes("היי") && !lowerMsg.includes("שלום") && !lowerMsg.includes("מה קורה");
-            
-            if (isQuestionOrEntity) {
-                // המערכת מחפשת ברשת באופן אוטומטי כדי לקבל רקע עדכני
-                searchResultsText = await fetchWebSearch(userMessage);
-            }
-
-            const systemPrompt = `You are SmartBot. You are connected to the live internet. 
-Here is live information from Google search results regarding the user's current input, use it to give accurate, non-hallucinated and fully updated information (especially about internet culture, YouTubers like MrBeast, celebrities, and new trends):
+            // 3. זרימת טקסט חכמה עם חיפוש חי (Web Search)
+            const systemPrompt = `You are SmartBot. You are connected to the live internet using DuckDuckGo. 
+Here is live information from DuckDuckGo search results regarding the user's current input, use it to give accurate, non-hallucinated and fully updated information:
 ${searchResultsText}
 
 Identify the user's language and reply 100% ONLY in that language. Be engaging and smart!`;
