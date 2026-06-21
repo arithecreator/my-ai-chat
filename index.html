@@ -578,7 +578,7 @@
             renderHistoryList(); updateQuotaDisplayOnly();
         }
 
-        // --- פונקציית שליחת ההודעות המרכזית (גרסה חכמה - זיהוי מילים שלמות בלבד) ---
+        // --- פונקציית שליחת ההודעות המרכזית (גרסה חכמה במיוחד - כולל תרגום אוטומטי לאנגלית) ---
         async function sendMessage() {
             const inputElement = document.getElementById("user-input");
             let userMessage = inputElement.value.trim();
@@ -620,27 +620,55 @@
             // --- זיהוי מורחב ומקיף של מילים שמבקשות מדיה ---
             const lowerMsg = userMessage.toLowerCase();
             
-            // מילים המבקשות תמונה
             const wantsImage = lowerMsg.includes("תמונה") || lowerMsg.includes("תצייר") || 
                                lowerMsg.includes("צייר") || lowerMsg.includes("תיצור") || 
                                lowerMsg.includes("תייצר") || lowerMsg.includes("תרכיב") || 
                                lowerMsg.includes("תעשה") || lowerMsg.includes("תכין") ||
                                lowerMsg.includes("image") || lowerMsg.includes("picture") || lowerMsg.includes("draw");
                                
-            // מילים המבקשות סרטון
             const wantsVideo = lowerMsg.includes("סרטון") || lowerMsg.includes("וידאו") || 
                                lowerMsg.includes("סרט") || lowerMsg.includes("video") || 
                                lowerMsg.includes("movie") || lowerMsg.includes("animation");
 
             if (wantsImage || wantsVideo) {
-                // תיקון קריטי: מחיקת מילות מפתח כמילים שלמות בלבד, כדי שלא ימחוק אותיות מתוך מילים כמו "פארק"
-                let promptClean = userMessage.replace(/(?:^|\s)(תמונה|תצייר|צייר|סרטון|וידאו|סרט|תיצור|תייצר|תרכיב|תעשה|תכין|לי|של|שלי|בשבילי|image|picture|video|draw|create|make|of)(?=\s|$)/gi, "").trim();
-                
-                // אם המשתמש רשם רק את המילה המפעילה בלי תיאור
-                if(!promptClean) promptClean = "AI Magic Art";
+                if (!apiKey) { alert(l.maintenance); if(document.getElementById(loadingId)) document.getElementById(loadingId).remove(); isWaitingForBot = false; return; }
 
-                // קידוד בטוח ל-URL
-                const encodedPrompt = encodeURIComponent(promptClean);
+                // מנקים מילים כלליות רק כדי לחלץ את מהות התיאור
+                let promptClean = userMessage.replace(/(?:^|\s)(תמונה|תצייר|צייר|סרטון|וידאו|סרט|תיצור|תייצר|תרכיב|תעשה|תכין|לי|של|שלי|בשבילי|image|picture|video|draw|create|make|of)(?=\s|$)/gi, "").trim();
+                if(!promptClean) promptClean = "beautiful dynamic scene";
+
+                let translatedPrompt = "beautiful dynamic scene";
+
+                // --- שלב התרגום וההרחבה הסודי: הופכים את התיאור של המשתמש לפרומפט מקצועי באנגלית באמצעות Groq ---
+                try {
+                    const translationResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                        method: "POST",
+                        headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            model: "llama-3.1-8b-instant",
+                            messages: [
+                                { 
+                                    role: "system", 
+                                    content: "You are an expert AI image prompt generator. Your only job is to translate the user's description into a high-quality, clear, descriptive English prompt for Stable Diffusion. Output ONLY the raw English translation/prompt. No explanations, no introduction, no conversation. Just the text." 
+                                },
+                                { role: "user", content: promptClean }
+                            ],
+                            temperature: 0.3
+                        })
+                    });
+
+                    if (translationResponse.ok) {
+                        const translationData = await translationResponse.json();
+                        translatedPrompt = translationData.choices[0].message.content.trim();
+                    } else {
+                        translatedPrompt = promptClean; // פולבק במקרה של בעיה זמנית
+                    }
+                } catch (e) {
+                    translatedPrompt = promptClean;
+                }
+
+                // קידוד בטוח ל-URL של האנגלית המתורגמת
+                const encodedPrompt = encodeURIComponent(translatedPrompt);
                 let botReplyText = "";
                 let mediaType = "";
                 let mediaUrl = "";
@@ -648,28 +676,24 @@
                 if (wantsImage) {
                     mediaType = "image";
                     mediaUrl = `https://image.pollinations.ai/p/${encodedPrompt}?width=1024&height=1024&nologo=true&enhance=true&seed=${Math.floor(Math.random() * 100000)}`;
-                    botReplyText = `🎨 הנה מה שביקשת! \n\n**הגדרה שהוגדרה ל-AI:** "${promptClean}"\n\nהמנוע יצר את התמונה הזו בזמן אמת עבורך. ✨`;
+                    botReplyText = `🎨 הנה מה שביקשת! \n\n**מה שביקשת:** "${promptClean}"\n**התרגום המדויק שנשלח לציור:** "${translatedPrompt}" ✨`;
                 } else {
                     mediaType = "video";
                     mediaUrl = `https://image.pollinations.ai/p/${encodedPrompt}?width=800&height=600&enhance=true&feed=true&seed=${Math.floor(Math.random() * 100000)}`;
-                    botReplyText = `🎬 הנה האנימציה / הסרטון הקצר שביקשת! \n\n**הגדרה שהוגדרה ל-AI:** "${promptClean}"\n\nיצרתי רצף פריימים מהיר המדמה וידאו (Stop-Motion AI) לפי התיאור שלך. 🚀`;
+                    botReplyText = `🎬 הנה האנימציה שביקשת! \n\n**מה שביקשת:** "${promptClean}"\n**התרגום המדויק שנשלח ליצירה:** "${translatedPrompt}" 🚀`;
                 }
 
-                // השהייה של 2.5 שניות בשביל חוויית משתמש טבעית
-                setTimeout(() => {
-                    if(document.getElementById(loadingId)) document.getElementById(loadingId).remove();
-                    isWaitingForBot = false;
+                if(document.getElementById(loadingId)) document.getElementById(loadingId).remove();
+                isWaitingForBot = false;
 
-                    const botIndex = conversations[currentConversationId].messages.length;
-                    conversations[currentConversationId].messages.push({ 
-                        role: "assistant", content: botReplyText, mediaType: mediaType, mediaUrl: mediaUrl 
-                    });
-                    
-                    appendMessageRow(botReplyText, "assistant", botIndex, mediaType, mediaUrl);
-                    localStorage.setItem(`groq_convs_${currentUser.uid}`, JSON.stringify(conversations));
-                }, 2500);
-
-                return; // עוצרים כאן ולא פונים ל-Groq
+                const botIndex = conversations[currentConversationId].messages.length;
+                conversations[currentConversationId].messages.push({ 
+                    role: "assistant", content: botReplyText, mediaType: mediaType, mediaUrl: mediaUrl 
+                });
+                
+                appendMessageRow(botReplyText, "assistant", botIndex, mediaType, mediaUrl);
+                localStorage.setItem(`groq_convs_${currentUser.uid}`, JSON.stringify(conversations));
+                return;
             }
 
             // --- המשך זרימה רגילה ל-Groq (טקסט בלבד) ---
