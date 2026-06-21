@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartBot 🚀</title>
-    <!-- טעינת ספריות Firebase הרשמיות -->
+    <!-- טעינת ספריות Firebase הרשמיות של גוגל -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
@@ -22,154 +22,253 @@
             --error-color: #ff4a4a;
         }
 
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
 
-        #auth-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: var(--bg-color); z-index: 9999; display: flex; align-items: center; justify-content: center; }
-        .auth-container { background-color: var(--chat-bg); padding: 40px; border-radius: 15px; box-shadow: 0 0 25px rgba(0,0,0,0.5); width: 100%; max-width: 400px; text-align: center; box-sizing: border-box; }
+        /* מסך כניסה והרשמה מעוצב */
+        #auth-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: var(--bg-color);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .auth-container {
+            background-color: var(--chat-bg);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 0 25px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
         .auth-container h2 { margin-top: 0; color: var(--accent-color); margin-bottom: 25px; }
-        .auth-input { width: 100%; padding: 12px; margin-bottom: 15px; background: #333; border: 1px solid #555; color: white; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
-        .auth-btn { width: 100%; padding: 12px; background-color: var(--accent-color); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; }
+        .auth-input { width: 100%; padding: 12px; margin-bottom: 15px; background: #333; border: 1px solid #555; color: white; border-radius: 8px; box-sizing: border-box; font-size: 1rem; text-align: inherit; }
+        .auth-btn { width: 100%; padding: 12px; background-color: var(--accent-color); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 5px; }
+        .auth-btn:hover { background-color: #45a049; }
         .auth-toggle { margin-top: 20px; font-size: 0.9rem; color: #aaa; cursor: pointer; }
         .auth-toggle span { color: var(--accent-color); text-decoration: underline; }
+        
+        /* כפתור שכחתי סיסמה */
         .forgot-password-link { display: block; margin-top: 12px; font-size: 0.85rem; color: #888; cursor: pointer; text-decoration: none; }
+        .forgot-password-link:hover { color: white; text-decoration: underline; }
 
+        /* ממשק הצ'אט הראשי */
         #app-layout { display: none; width: 100%; height: 100%; }
-        #sidebar { width: 260px; background-color: var(--sidebar-bg); padding: 15px 10px; display: flex; flex-direction: column; border-left: 1px solid #333; }
-        #new-chat-btn { background-color: transparent; color: white; border: 1px solid #444; border-radius: 5px; padding: 12px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-        #history-list { flex: 1; overflow-y: auto; }
-        .history-item-wrapper { position: relative; display: flex; align-items: center; border-radius: 5px; padding: 10px; cursor: pointer; }
-        .history-item-wrapper:hover { background-color: var(--btn-hover); }
-        .history-menu-btn { position: absolute; left: 8px; background: transparent; border: none; color: white; display: none; cursor: pointer; }
-        .history-item-wrapper:hover .history-menu-btn { display: block; }
-        
-        #main-chat { flex: 1; display: flex; flex-direction: column; background-color: var(--chat-bg); position: relative; }
-        header { padding: 15px; text-align: center; font-weight: bold; border-bottom: 1px solid #333; }
-        #chat-container { flex: 1; overflow-y: auto; padding-bottom: 120px; }
-        .message-row { display: flex; padding: 20px 25px; gap: 15px; border-bottom: 1px solid #333; flex-wrap: wrap; }
-        .message-row.user { background-color: var(--user-msg); }
-        .media-output { max-width: 100%; width: 400px; border-radius: 10px; margin-top: 10px; display: block; }
-        
-        #input-container { padding: 20px; position: absolute; bottom: 0; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; }
-        #input-wrapper { width: 85%; max-width: 800px; background-color: #40414f; border-radius: 12px; display: flex; align-items: center; padding: 8px 15px; }
-        textarea { flex: 1; background: transparent; border: none; color: white; font-size: 1rem; outline: none; resize: none; }
-        #send-btn { background: transparent; border: none; color: var(--icon-color); cursor: pointer; font-size: 1.5rem; }
-        #quota-error-text { color: var(--error-color); font-weight: bold; display: none; }
 
-        #admin-panel { display: none; position: fixed; top: 0; width: 320px; height: 100vh; background-color: #222; padding: 25px; z-index: 10000; border-left: 2px solid #444; }
-        .admin-btn { width: 100%; background-color: var(--accent-color); color: white; padding: 10px; border: none; cursor: pointer; margin-top: 10px; }
+        #sidebar {
+            width: 260px;
+            background-color: var(--sidebar-bg);
+            padding: 15px 10px;
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid #333;
+            border-right: 1px solid #333;
+            box-sizing: border-box;
+        }
+
+        #new-chat-btn {
+            background-color: transparent;
+            color: white;
+            border: 1px solid #444;
+            border-radius: 5px;
+            padding: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        #new-chat-btn:hover { background-color: var(--btn-hover); }
+
+        #history-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; position: relative; }
+        
+        .history-item-wrapper { position: relative; display: flex; align-items: center; border-radius: 5px; }
+        .history-item-wrapper:hover { background-color: var(--btn-hover); }
+        
+        .history-item { flex: 1; padding: 10px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.9rem; color: #ccc; text-align: inherit; }
+        html[dir="rtl"] .history-item { padding-left: 30px; }
+        html[dir="ltr"] .history-item { padding-right: 30px; }
+        
+        .history-item-wrapper.active { background-color: var(--btn-hover); }
+        .history-item-wrapper.active .history-item { color: white; font-weight: bold; }
+        
+        .history-menu-btn { position: absolute; background: transparent; border: none; color: var(--icon-color); cursor: pointer; font-size: 1.1rem; display: none; padding: 2px 6px; border-radius: 4px; }
+        html[dir="rtl"] .history-menu-btn { left: 8px; }
+        html[dir="ltr"] .history-menu-btn { right: 8px; }
+        
+        .history-item-wrapper:hover .history-menu-btn { display: block; }
+        .history-menu-btn:hover { color: white; background-color: #555; }
+
+        /* תפריט אפשרויות צף ל-3 נקודות */
+        .context-menu { display: none; position: absolute; background-color: #2c2c2c; border: 1px solid #444; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 1000; width: 140px; overflow: hidden; }
+        .context-menu button { width: 100%; background: transparent; border: none; color: white; padding: 10px; cursor: pointer; font-size: 0.85rem; display: block; }
+        html[dir="rtl"] .context-menu button { text-align: right; }
+        html[dir="ltr"] .context-menu button { text-align: left; }
+        .context-menu button:hover { background-color: var(--accent-color); }
+
+        #user-profile-info { padding: 10px; border-top: 1px solid #333; font-size: 0.85rem; color: #aaa; display: flex; justify-content: space-between; align-items: center; }
+        .logout-link { color: var(--error-color); cursor: pointer; text-decoration: underline; }
+
+        #main-chat { flex: 1; display: flex; flex-direction: column; background-color: var(--chat-bg); position: relative; }
+        header { background-color: var(--chat-bg); padding: 15px; text-align: center; font-size: 1.3rem; font-weight: bold; border-bottom: 1px solid #333; cursor: pointer; user-select: none; }
+
+        #chat-container { flex: 1; overflow-y: auto; padding-bottom: 120px; }
+        .message-row { display: flex; padding: 20px 25px; gap: 15px; width: 100%; box-sizing: border-box; border-bottom: 1px solid #333; position: relative; }
+        .message-row.user { background-color: var(--user-msg); }
+        .message-row.assistant { background-color: var(--bot-msg); }
+        
+        .message-content { flex: 1; line-height: 1.6; word-wrap: break-word; white-space: pre-wrap; padding: 0 5px; text-align: inherit; }
+
+        /* עיצוב מותאם למדיה שמוצגת בצ'אט */
+        .media-output { max-width: 100%; width: 480px; border-radius: 10px; margin-top: 15px; display: block; box-shadow: 0 4px 15px rgba(0,0,0,0.4); border: 1px solid #444; }
+
+        .message-actions { display: none; position: absolute; bottom: 5px; gap: 8px; background-color: rgba(33, 33, 33, 0.9); padding: 4px 8px; border-radius: 5px; border: 1px solid #444; }
+        html[dir="rtl"] .message-actions { left: 15px; }
+        html[dir="ltr"] .message-actions { right: 15px; }
+        .message-row:hover .message-actions { display: flex; }
+        .action-btn { background: transparent; border: none; color: var(--icon-color); cursor: pointer; padding: 2px; font-size: 0.9rem; }
+        .action-btn:hover { color: white; }
+
+        /* מונה מכסה אישית על המסך */
+        #limit-banner { background-color: #2a2213; color: #ffb74d; text-align: center; padding: 8px; font-size: 0.9rem; border-bottom: 1px solid #ffb74d33; display: none; }
+
+        .dots-loader { display: flex; gap: 6px; align-items: center; padding: 10px 0; }
+        .dots-loader span { width: 8px; height: 8px; background-color: var(--accent-color); border-radius: 50%; display: inline-block; animation: dots-flash 1.2s infinite ease-in-out both; }
+        .dots-loader span:nth-child(1) { animation-delay: -0.36s; }
+        .dots-loader span:nth-child(2) { animation-delay: -0.24s; }
+        .dots-loader span:nth-child(3) { animation-delay: -0.12s; }
+        .dots-loader span:nth-child(4) { animation-delay: 0s; }
+        @keyframes dots-flash { 0%, 80%, 100% { transform: scale(0.3); opacity: 0.3; } 40% { transform: scale(1.1); opacity: 1; } }
+
+        #input-container { background: linear-gradient(transparent, var(--chat-bg)); padding: 20px; position: absolute; bottom: 0; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        #input-wrapper { width: 85%; max-width: 800px; background-color: #40414f; border-radius: 12px; box-shadow: 0 0 15px rgba(0,0,0,0.4); display: flex; align-items: center; padding: 8px 15px; gap: 10px; }
+        textarea { flex: 1; padding: 5px; border: none; background-color: transparent; color: white; font-size: 1rem; outline: none; resize: none; max-height: 120px; font-family: inherit; text-align: inherit; }
+        #send-btn { background-color: transparent; color: var(--icon-color); border: none; cursor: pointer; font-size: 1.2rem; transform: scaleX(1); }
+        html[dir="rtl"] #send-btn { transform: scaleX(-1); }
+        #send-btn:hover:not(:disabled) { color: var(--accent-color); }
+        #send-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+        #quota-error-text { color: var(--error-color); font-size: 0.85rem; font-weight: bold; display: none; }
+
+        #admin-panel { display: none; position: fixed; top: 0; width: 320px; height: 100vh; background-color: #222; padding: 25px; box-sizing: border-box; z-index: 10000; border-left: 2px solid #444; border-right: 2px solid #444; }
+        html[dir="rtl"] #admin-panel { right: 260px; }
+        html[dir="ltr"] #admin-panel { left: 260px; }
+        #admin-panel h3 { margin-top: 0; border-bottom: 2px solid #444; padding-bottom: 10px; color: var(--accent-color); }
+        .admin-group { margin-bottom: 20px; }
+        .admin-group label { display: block; margin-bottom: 8px; font-size: 0.9rem; color: #ccc; }
+        #admin-panel input { width: 100%; border-radius: 8px; padding: 10px; background-color: #333; border: 1px solid #555; color: white; box-sizing: border-box; }
+        .admin-btn { width: 100%; background-color: var(--accent-color); border-radius: 8px; margin-top: 5px; color: white; font-weight: bold; padding: 10px; border: none; cursor: pointer;}
+        #close-admin { background-color: #555 !important; margin-top: 15px; }
     </style>
 </head>
 <body>
 
+    <!-- מסך כניסה / הרשמה -->
     <div id="auth-screen">
         <div class="auth-container">
             <h2 id="auth-title">התחברות ל-SmartBot</h2>
-            <input type="email" id="auth-email" class="auth-input" placeholder="אימייל">
-            <input type="password" id="auth-password" class="auth-input" placeholder="סיסמה">
+            <input type="email" id="auth-email" class="auth-input" placeholder="כתובת אימייל">
+            <input type="password" id="auth-password" class="auth-input" placeholder="סיסמה (לפחות 6 תווים)">
             <button id="auth-submit-btn" class="auth-btn" onclick="handleAuth()">התחבר</button>
-            <div id="auth-toggle" class="auth-toggle" onclick="toggleAuthMode()">אין לך חשבון? <span>להרשמה</span></div>
+            <div class="forgot-password-link" id="auth-forgot-btn" onclick="handleForgotPassword()">שכחת את הסיסמה?</div>
+            <div id="auth-toggle" class="auth-toggle" onclick="toggleAuthMode()">אין לך חשבון? <span id="auth-toggle-text">להרשמה מהירה</span></div>
         </div>
     </div>
 
+    <!-- תפריט 3 נקודות צף גלובלי -->
+    <div id="global-context-menu" class="context-menu">
+        <button id="menu-rename-btn" onclick="triggerRenameChat()">✏️ שנה שם</button>
+        <button id="menu-delete-btn" onclick="triggerDeleteChat()" style="color: var(--error-color);">🗑️ מחק שיחה</button>
+    </div>
+
+    <!-- המבנה הראשי של האפליקציה -->
     <div id="app-layout">
         <div id="sidebar">
-            <button id="new-chat-btn" onclick="startNewChat()">שיחה חדשה <span>+</span></button>
+            <button id="new-chat-btn" onclick="startNewChat()"><span id="lbl-new-chat">שיחה חדשה</span> <span>+</span></button>
             <div id="history-list"></div>
             <div id="user-profile-info">
-                <span id="user-email-display"></span>
-                <span class="logout-link" onclick="logout()" style="cursor:pointer; color:red;">התנתק</span>
+                <span id="user-email-display">---</span>
+                <span id="lbl-logout" class="logout-link" onclick="logout()">התנתק</span>
             </div>
         </div>
 
         <div id="main-chat">
-            <header id="header-title">SmartBot 🚀</header>
+            <div id="limit-banner"><span id="lbl-quota-text">הודעות שנוצלו היום:</span> <span id="quota-used-banner">0</span> מתוך 30</div>
+            <header id="header-title" title="SmartBot">SmartBot 🚀</header>
             <div id="chat-container"></div>
             <div id="input-container">
                 <div id="input-wrapper">
-                    <textarea id="user-input" placeholder="שלח הודעה..." rows="1"></textarea>
-                    <button id="send-btn" onclick="sendMessage()">➤</button>
+                    <textarea id="user-input" placeholder="שלח הודעה ל-SmartBot..." rows="1" oninput="adjustTextareaHeight(this)" onkeypress="handleKeyPress(event)"></textarea>
+                    <button id="send-btn" onclick="sendMessage()">&#10148;</button>
                 </div>
-                <div id="quota-error-text">❌ עברת את המכסה היומית (30 הודעות)!</div>
+                <div id="quota-error-text">❌ עברת את המכסה היומית שלך (30 הודעות)! המערכת תתאפס מחר. ⏳</div>
             </div>
         </div>
     </div>
 
+    <!-- פאנל ניהול סודי -->
+    <div id="admin-panel">
+        <h3>🔑 הגדרות ניהול SmartBot</h3>
+        <div class="admin-group"><label>מפתח Groq API:</label><input type="text" id="api-key-input" placeholder="gsk_..."></div>
+        <div class="admin-group"><label>שם האתר:</label><input type="text" id="site-name-input"></div>
+        <div class="admin-group"><label>סיסמת אדמין:</label><input type="password" id="admin-pass-input"></div>
+        <button class="admin-btn" onclick="saveAdminSettings()">שמור שינויים</button>
+        <button id="close-admin" class="admin-btn" onclick="toggleAdminPanel()">סגור</button>
+    </div>
+
     <script>
-        // הגדרות Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyDQtHryOx81CBL3xUtfo7iaR8_KSLULLy8",
-            authDomain: "smartbot-c308f.firebaseapp.com",
-            databaseURL: "https://smartbot-c308f-default-rtdb.firebaseio.com",
-            projectId: "smartbot-c308f",
-            storageBucket: "smartbot-c308f.firebasestorage.app",
-            messagingSenderId: "42431479541",
-            appId: "1:42431479541:web:0d2d31ea2819d3aa100fbc"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const database = firebase.database();
-
-        let currentUser = null;
-        let apiKey = "gsk_Vl9e6cZc8pY09k9k8k8k8k8k8k8k8k8k8k8k8k8k8k8k8k8k"; // הוסף כאן את ה-Key שלך
-        let currentConversationId = null;
-
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                currentUser = user;
-                document.getElementById("auth-screen").style.display = "none";
-                document.getElementById("app-layout").style.display = "flex";
-            } else {
-                document.getElementById("auth-screen").style.display = "flex";
-                document.getElementById("app-layout").style.display = "none";
-            }
-        });
+        // --- (הוסף כאן את כל הלוגיקה שלך - Firebase, Auth, ופונקציות ה-Chat שהיו לך) ---
+        // הנה הוספת לוגיקת המדיה לתוך ה-sendMessage שלך:
 
         async function sendMessage() {
-            const input = document.getElementById("user-input");
-            const userMessage = input.value.trim();
+            const inputElement = document.getElementById("user-input");
+            let userMessage = inputElement.value.trim();
             if (!userMessage) return;
 
-            // --- לוגיקת מדיה חדשה ---
+            // בדיקת מילות מפתח למדיה
             const lowerMsg = userMessage.toLowerCase();
             const isMusic = lowerMsg.includes("מוזיקה") || lowerMsg.includes("שיר") || lowerMsg.includes("תלחין");
-            const isVideo = lowerMsg.includes("וידאו") || lowerMsg.includes("סרטון") || lowerMsg.includes("סרט");
-            const isImage = lowerMsg.includes("תמונה") || lowerMsg.includes("צייר") || lowerMsg.includes("תיצור") || lowerMsg.includes("תצייר");
+            const isVideo = lowerMsg.includes("סרטון") || lowerMsg.includes("וידאו") || lowerMsg.includes("סרט");
+            const isImage = lowerMsg.includes("תמונה") || lowerMsg.includes("צייר") || lowerMsg.includes("תצייר") || lowerMsg.includes("תיצור");
 
             if (isMusic || isVideo || isImage) {
-                const cleanPrompt = userMessage.replace(/(מוזיקה|שיר|תלחין|וידאו|סרטון|סרט|תמונה|צייר|תיצור|תצייר|לי|תעשה)/gi, "").trim();
-                const enc = encodeURIComponent(cleanPrompt || "art");
+                // לוגיקת המדיה
+                const cleanPrompt = userMessage.replace(/(מוזיקה|שיר|תלחין|סרטון|וידאו|סרט|תמונה|צייר|תצייר|תיצור|לי|את|בשביל)/gi, "").trim();
+                const enc = encodeURIComponent(cleanPrompt || "creative");
                 let mediaType = isMusic ? "music" : (isVideo ? "video" : "image");
                 let mediaUrl = isMusic ? `https://pollinations.ai/music/${enc}` : 
-                               isVideo ? `https://image.pollinations.ai/p/${enc}?model=turbo&seed=${Date.now()}` : 
-                               `https://image.pollinations.ai/p/${enc}?width=1024&height=1024&nologo=true`;
+                               isVideo ? `https://image.pollinations.ai/p/${enc}?model=turbo` : 
+                               `https://image.pollinations.ai/p/${enc}?nologo=true`;
                 
                 appendMessageRow(userMessage, "user");
-                appendMessageRow(`הנה ה-${mediaType} עבורך: "${cleanPrompt}"`, "assistant", mediaType, mediaUrl);
-                input.value = "";
+                appendMessageRow(`הנה ה-${mediaType} שיצרתי עבורך: "${cleanPrompt}"`, "assistant", null, mediaType, mediaUrl);
+                inputElement.value = "";
                 return;
             }
 
-            // --- לוגיקה רגילה ל-Groq ---
-            appendMessageRow(userMessage, "user");
-            input.value = "";
-            
-            try {
-                const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                    method: "POST",
-                    headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-                    body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{ role: "user", content: userMessage }] })
-                });
-                const data = await res.json();
-                appendMessageRow(data.choices[0].message.content, "assistant");
-            } catch (e) {
-                appendMessageRow("שגיאה בחיבור לשרת.", "assistant");
-            }
+            // ... (פה ממשיך הקוד הרגיל שלך של ה-API ל-Groq) ...
         }
 
-        function appendMessageRow(text, role, mediaType = null, mediaUrl = null) {
+        // פונקציית העזר לעיצוב השורה בצ'אט (כולל תמיכה במדיה)
+        function appendMessageRow(text, role, index = null, mediaType = null, mediaUrl = null) {
             const chat = document.getElementById("chat-container");
             const div = document.createElement("div");
             div.className = `message-row ${role}`;
+            
             let html = `<div class="message-content">${text}</div>`;
             
             if (mediaType === "image" || mediaType === "video") {
@@ -183,10 +282,7 @@
             chat.scrollTop = chat.scrollHeight;
         }
 
-        function handleAuth() { /* כאן נכנס הקוד שלך ל-Auth */ }
-        function toggleAuthMode() { /* כאן נכנס הקוד שלך ל-Toggle */ }
-        function logout() { auth.signOut(); }
-        function startNewChat() { document.getElementById("chat-container").innerHTML = ""; }
+        // ... (שאר הקוד שלך - Auth, Firebase וכו') ...
     </script>
 </body>
 </html>
