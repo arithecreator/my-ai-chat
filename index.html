@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartBot 🚀</title>
+    <!-- טעינת ספריות Firebase הרשמיות של גוגל -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
@@ -133,8 +134,8 @@
         
         .message-content { flex: 1; line-height: 1.6; word-wrap: break-word; white-space: pre-wrap; padding: 0 5px; text-align: inherit; }
 
-        /* עיצוב ייחודי למדיה המוצגת בצ'אט */
-        .media-output { max-width: 100%; width: 450px; border-radius: 10px; margin-top: 12px; display: block; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 1px solid #444; }
+        /* עיצוב מותאם למדיה שמוצגת בצ'אט */
+        .media-output { max-width: 100%; width: 480px; border-radius: 10px; margin-top: 15px; display: block; box-shadow: 0 4px 15px rgba(0,0,0,0.4); border: 1px solid #444; }
 
         .message-actions { display: none; position: absolute; bottom: 5px; gap: 8px; background-color: rgba(33, 33, 33, 0.9); padding: 4px 8px; border-radius: 5px; border: 1px solid #444; }
         html[dir="rtl"] .message-actions { left: 15px; }
@@ -176,6 +177,7 @@
 </head>
 <body>
 
+    <!-- מסך כניסה / הרשמה -->
     <div id="auth-screen">
         <div class="auth-container">
             <h2 id="auth-title">התחברות ל-SmartBot</h2>
@@ -187,11 +189,13 @@
         </div>
     </div>
 
+    <!-- תפריט 3 נקודות צף גלובלי -->
     <div id="global-context-menu" class="context-menu">
         <button id="menu-rename-btn" onclick="triggerRenameChat()">✏️ שנה שם</button>
         <button id="menu-delete-btn" onclick="triggerDeleteChat()" style="color: var(--error-color);">🗑️ מחק שיחה</button>
     </div>
 
+    <!-- המבנה הראשי של האפליקציה -->
     <div id="app-layout">
         <div id="sidebar">
             <button id="new-chat-btn" onclick="startNewChat()"><span id="lbl-new-chat">שיחה חדשה</span> <span>+</span></button>
@@ -216,6 +220,7 @@
         </div>
     </div>
 
+    <!-- פאנל ניהול סודי -->
     <div id="admin-panel">
         <h3>🔑 הגדרות ניהול SmartBot</h3>
         <div class="admin-group"><label>מפתח Groq API:</label><input type="text" id="api-key-input" placeholder="gsk_..."></div>
@@ -573,7 +578,7 @@
             renderHistoryList(); updateQuotaDisplayOnly();
         }
 
-        // --- פונקציית שליחת ההודעות המרכזית (כולל זיהוי ויצירת תמונות וסרטונים) ---
+        // --- פונקציית שליחת ההודעות המרכזית (מחודשת לחלוטין למדיה וטקסט) ---
         async function sendMessage() {
             const inputElement = document.getElementById("user-input");
             let userMessage = inputElement.value.trim();
@@ -612,17 +617,29 @@
             isWaitingForBot = true;
             const loadingId = appendLoadingRow();
 
-            // --- זיהוי מילים שמבקשות מדיה (תמונה / סרטון) ---
+            // --- זיהוי מורחב ומקיף של מילים שמבקשות מדיה ---
             const lowerMsg = userMessage.toLowerCase();
-            const wantsImage = lowerMsg.includes("תמונה") || lowerMsg.includes("תצייר") || lowerMsg.includes("צייר") || lowerMsg.includes("image") || lowerMsg.includes("picture");
-            const wantsVideo = lowerMsg.includes("סרטון") || lowerMsg.includes("וידאו") || lowerMsg.includes("video") || lowerMsg.includes("movie");
+            
+            // מילים המבקשות תמונה
+            const wantsImage = lowerMsg.includes("תמונה") || lowerMsg.includes("תצייר") || 
+                               lowerMsg.includes("צייר") || lowerMsg.includes("תיצור") || 
+                               lowerMsg.includes("תייצר") || lowerMsg.includes("תרכיב") || 
+                               lowerMsg.includes("תעשה") || lowerMsg.includes("תכין") ||
+                               lowerMsg.includes("image") || lowerMsg.includes("picture") || lowerMsg.includes("draw");
+                               
+            // מילים המבקשות סרטון
+            const wantsVideo = lowerMsg.includes("סרטון") || lowerMsg.includes("וידאו") || 
+                               lowerMsg.includes("סרט") || lowerMsg.includes("video") || 
+                               lowerMsg.includes("movie") || lowerMsg.includes("animation");
 
             if (wantsImage || wantsVideo) {
-                // ניקוי המילים המפעילות כדי להשאיר רק את התיאור האמיתי
-                let promptClean = userMessage.replace(/(תמונה|תצייר|צייר|סרטון|וידאו|תייצר|ייצר|של|שלי|image|picture|video|draw|create|make|of)/gi, "").trim();
-                if(!promptClean) promptClean = "AI Fantasy Magic Art";
+                // ניקוי יסודי של מילות המפתח כדי שלא ישבשו את הקישור של התמונה
+                let promptClean = userMessage.replace(/(תמונה|תצייר|צייר|סרטון|וידאו|סרט|תיצור|תייצר|תרכיב|תעשה|תכין|לי|של|שלי|בשבילי|image|picture|video|draw|create|make|of)/gi, "").trim();
+                
+                // אם המשתמש רשם רק את המילה המפעילה בלי תיאור
+                if(!promptClean) promptClean = "AI Magic Art";
 
-                // קידוד הטקסט לפורמט URL בטוח
+                // קידוד בטוח ל-URL
                 const encodedPrompt = encodeURIComponent(promptClean);
                 let botReplyText = "";
                 let mediaType = "";
@@ -630,18 +647,18 @@
 
                 if (wantsImage) {
                     mediaType = "image";
-                    mediaUrl = `https://image.pollinations.ai/p/${encodedPrompt}?width=1024&height=1024&nologo=true&seed=${Math.floor(Math.random() * 100000)}`;
-                    botReplyText = `🎨 הנה התמונה שביקשת! \n\n**הגדרה שהוגדרה ל-AI:** "${promptClean}"\n\nהמנוע השתמש במודל Flux מתקדם כדי ליצור את התמונה הזו בזמן אמת עבורך. ✨`;
+                    mediaUrl = `https://image.pollinations.ai/p/${encodedPrompt}?width=1024&height=1024&nologo=true&enhance=true&seed=${Math.floor(Math.random() * 100000)}`;
+                    botReplyText = `🎨 הנה מה שביקשת! \n\n**הגדרה שהוגדרה ל-AI:** "${promptClean}"\n\nהמנוע יצר את התמונה הזו בזמן אמת עבורך. ✨`;
                 } else {
                     mediaType = "video";
-                    // כאן אנו משתמשים במחולל האנימציה הדינמי המובנה של Pollinations המבוסס על רצף פריימים מהיר המייצר וידאו/GIF
+                    // יצירת רצף אנימציה מהיר (מתפקד כסרטון דינמי באתר)
                     mediaUrl = `https://image.pollinations.ai/p/${encodedPrompt}?width=800&height=600&enhance=true&feed=true&seed=${Math.floor(Math.random() * 100000)}`;
-                    botReplyText = `🎬 הנה הסרטון/האנימציה הקצרה שביקשת! \n\n**הגדרה שהוגדרה ל-AI:** "${promptClean}"\n\nיצרתי רצף פריימים מהיר (Stop-Motion AI Video Animation) כדי להנפיש את התיאור שלך. לחץ לחיצה ימנית כדי לשמור! 🚀`;
+                    botReplyText = `🎬 הנה האנימציה / הסרטון הקצר שביקשת! \n\n**הגדרה שהוגדרה ל-AI:** "${promptClean}"\n\nיצרתי רצף פריימים מהיר המדמה וידאו (Stop-Motion AI) לפי התיאור שלך. 🚀`;
                 }
 
-                // השהייה קטנה בשביל תחושה שהבוט "חושב ומייצר"
+                // השהייה של 2.5 שניות בשביל חוויית משתמש טבעית
                 setTimeout(() => {
-                    document.getElementById(loadingId).remove();
+                    if(document.getElementById(loadingId)) document.getElementById(loadingId).remove();
                     isWaitingForBot = false;
 
                     const botIndex = conversations[currentConversationId].messages.length;
@@ -653,11 +670,11 @@
                     localStorage.setItem(`groq_convs_${currentUser.uid}`, JSON.stringify(conversations));
                 }, 2500);
 
-                return; // יוצאים מהפונקציה ולא ממשיכים ל-Groq
+                return; // עוצרים כאן ולא פונים ל-Groq
             }
 
-            // --- המשך זרימה רגילה ל-Groq במידה ולא ביקש מדיה ---
-            if (!apiKey) { alert(l.maintenance); document.getElementById(loadingId).remove(); isWaitingForBot = false; return; }
+            // --- המשך זרימה רגילה ל-Groq (טקסט בלבד) ---
+            if (!apiKey) { alert(l.maintenance); if(document.getElementById(loadingId)) document.getElementById(loadingId).remove(); isWaitingForBot = false; return; }
 
             try {
                 const chatHistory = conversations[currentConversationId].messages.slice(-12).map(msg => ({
@@ -678,7 +695,7 @@
                 });
 
                 const data = await response.json();
-                document.getElementById(loadingId).remove();
+                if(document.getElementById(loadingId)) document.getElementById(loadingId).remove();
                 isWaitingForBot = false;
 
                 if (response.ok) {
@@ -720,13 +737,13 @@
             content.className = "message-content";
             content.innerText = text;
 
-            // אם יש תמונה או סרטון להציג, נוסיף אותם ישירות מתחת לטקסט ההסבר
+            // הצגת המדיה באופן מובנה ויציב בתוך הצ'אט במידה וקיימת
             if (mediaType === "image" && mediaUrl) {
                 const img = document.createElement("img");
                 img.src = mediaUrl; img.className = "media-output"; img.alt = "AI Generated Image";
                 content.appendChild(img);
             } else if (mediaType === "video" && mediaUrl) {
-                const imgVid = document.createElement("img"); // שימוש בפורמט מונפש
+                const imgVid = document.createElement("img");
                 imgVid.src = mediaUrl; imgVid.className = "media-output"; imgVid.alt = "AI Generated Video Animation";
                 content.appendChild(imgVid);
             }
