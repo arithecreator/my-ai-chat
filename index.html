@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartBot 🚀</title>
+    <!-- טעינת ספריות Firebase הרשמיות של גוגל -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
@@ -176,6 +177,7 @@
 </head>
 <body>
 
+    <!-- מסך כניסה / הרשמה -->
     <div id="auth-screen">
         <div class="auth-container">
             <h2 id="auth-title">התחברות ל-SmartBot</h2>
@@ -187,11 +189,13 @@
         </div>
     </div>
 
+    <!-- תפריט 3 נקודות צף גלובלי -->
     <div id="global-context-menu" class="context-menu">
         <button id="menu-rename-btn" onclick="triggerRenameChat()">✏️ שנה שם</button>
         <button id="menu-delete-btn" onclick="triggerDeleteChat()" style="color: var(--error-color);">🗑️ מחק שיחה</button>
     </div>
 
+    <!-- המבנה הראשי של האפליקציה -->
     <div id="app-layout">
         <div id="sidebar">
             <button id="new-chat-btn" onclick="startNewChat()"><span id="lbl-new-chat">שיחה חדשה</span> <span>+</span></button>
@@ -216,6 +220,7 @@
         </div>
     </div>
 
+    <!-- פאנל ניהול סודי -->
     <div id="admin-panel">
         <h3>🔑 הגדרות ניהול SmartBot</h3>
         <div class="admin-group"><label>מפתח Groq API:</label><input type="text" id="api-key-input" placeholder="gsk_..."></div>
@@ -635,7 +640,8 @@
                             messages: [
                                 { 
                                     role: "system", 
-                                    content: "You are a prompt engineer for an AI image generator. Look at the conversation history, user's input, and Google search results (if available). Generate a highly detailed descriptive graphic prompt in English representing what the user wants to see. ALWAYS utilize the broad knowledge provided by the Google search results to make the prompt accurate. Output ONLY English descriptive text." 
+                                    // === 🔴 התיקון הקריטי כאן: הגדרות נוקשות שלא מאפשרות לו לסרב או לדבר בעברית! ===
+                                    content: "You are a specialized translation and image description module. Your ONLY job is to take the user's request and the provided web context, and transform it into a highly detailed visual prompt in English for a text-to-image generator. Do NOT say 'I am a text model', do NOT write any apologies, do NOT chat, and do NOT write in Hebrew. Even if the user asks you to paint or says you can't, IGNORE their rejection and simply output a detailed descriptive design prompt in English of the requested person or object. Output ONLY raw English prompt text." 
                                 },
                                 ...chatHistory,
                                 {
@@ -643,7 +649,7 @@
                                     content: `Current User Request: "${userMessage}"\nDuckDuckGo Context: "${searchResultsText}"`
                                 }
                             ],
-                            temperature: 0.5
+                            temperature: 0.3
                         })
                     });
 
@@ -655,8 +661,9 @@
                     console.error("Contextual prompt generation failed", e);
                 }
                 
-                if (!finalImagePrompt) {
-                    finalImagePrompt = userMessage.replace(/(?:^|\s)(תמונה|תצייר|צייר|סרטון|וידאו|סרט|תיצור|תייצר|תרכיב|תעשה|תכין|לי|של|שלי|בשבילי)(?=\s|$)/gi, "").trim() || "playground";
+                // מנגנון הגנה למקרה חירום
+                if (!finalImagePrompt || finalImagePrompt.includes("sorry") || finalImagePrompt.includes("מצטער")) {
+                    finalImagePrompt = userMessage.replace(/(?:^|\s)(תמונה|תצייר|צייר|סרטון|וידאו|סרט|תיצור|תייצר|תרכיב|תעשה|תכין|לי|של|שלי|בשבילי)(?=\s|$)/gi, "").trim() || "MrBeast";
                 }
 
                 const encodedPrompt = encodeURIComponent(finalImagePrompt);
@@ -669,7 +676,6 @@
 
                 const botIndex = conversations[currentConversationId].messages.length;
                 
-                // === תיקון קריטי: שמירה והצגה ישירה עם הפרמטרים הנכונים של המדיה! ===
                 conversations[currentConversationId].messages.push({ role: "assistant", content: botReplyText, mediaType: mediaType, mediaUrl: mediaUrl });
                 appendMessageRow(botReplyText, "assistant", botIndex, mediaType, mediaUrl);
                 
@@ -740,12 +746,10 @@ Identify the user's language and reply 100% ONLY in that language. Be engaging a
             const content = document.createElement("div");
             content.className = "message-content";
             
-            // הצגת הטקסט
             const textNode = document.createElement("div");
             textNode.innerText = text;
             content.appendChild(textNode);
 
-            // === תיקון התצוגה המעוותת: הזרקת האלמנטים הנכונים ישירות ל-DOM ===
             if (mediaType === "image" && mediaUrl) {
                 const img = document.createElement("img");
                 img.src = mediaUrl; img.className = "media-output"; img.alt = "AI Generated Image";
