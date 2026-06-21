@@ -578,7 +578,7 @@
             renderHistoryList(); updateQuotaDisplayOnly();
         }
 
-        // --- פונקציית שליחת ההודעות המרכזית (מחודשת לחלוטין למדיה וטקסט) ---
+        // --- פונקציית שליחת ההודעות המרכזית (גרסה חכמה - זיהוי מילים שלמות בלבד) ---
         async function sendMessage() {
             const inputElement = document.getElementById("user-input");
             let userMessage = inputElement.value.trim();
@@ -633,8 +633,8 @@
                                lowerMsg.includes("movie") || lowerMsg.includes("animation");
 
             if (wantsImage || wantsVideo) {
-                // ניקוי יסודי של מילות המפתח כדי שלא ישבשו את הקישור של התמונה
-                let promptClean = userMessage.replace(/(תמונה|תצייר|צייר|סרטון|וידאו|סרט|תיצור|תייצר|תרכיב|תעשה|תכין|לי|של|שלי|בשבילי|image|picture|video|draw|create|make|of)/gi, "").trim();
+                // תיקון קריטי: מחיקת מילות מפתח כמילים שלמות בלבד, כדי שלא ימחוק אותיות מתוך מילים כמו "פארק"
+                let promptClean = userMessage.replace(/(?:^|\s)(תמונה|תצייר|צייר|סרטון|וידאו|סרט|תיצור|תייצר|תרכיב|תעשה|תכין|לי|של|שלי|בשבילי|image|picture|video|draw|create|make|of)(?=\s|$)/gi, "").trim();
                 
                 // אם המשתמש רשם רק את המילה המפעילה בלי תיאור
                 if(!promptClean) promptClean = "AI Magic Art";
@@ -651,7 +651,6 @@
                     botReplyText = `🎨 הנה מה שביקשת! \n\n**הגדרה שהוגדרה ל-AI:** "${promptClean}"\n\nהמנוע יצר את התמונה הזו בזמן אמת עבורך. ✨`;
                 } else {
                     mediaType = "video";
-                    // יצירת רצף אנימציה מהיר (מתפקד כסרטון דינמי באתר)
                     mediaUrl = `https://image.pollinations.ai/p/${encodedPrompt}?width=800&height=600&enhance=true&feed=true&seed=${Math.floor(Math.random() * 100000)}`;
                     botReplyText = `🎬 הנה האנימציה / הסרטון הקצר שביקשת! \n\n**הגדרה שהוגדרה ל-AI:** "${promptClean}"\n\nיצרתי רצף פריימים מהיר המדמה וידאו (Stop-Motion AI) לפי התיאור שלך. 🚀`;
                 }
