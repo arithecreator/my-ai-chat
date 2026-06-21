@@ -649,7 +649,7 @@
                         method: "POST",
                         headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
                         body: JSON.stringify({
-                            model: "llama-3.3-70b-specdec",
+                            model: "llama-3.3-70b-versatile",
                             messages: [
                                 { 
                                     role: "system", 
@@ -727,7 +727,7 @@
                     method: "POST",
                     headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        model: "llama-3.3-70b-specdec",
+                        model: "llama-3.3-70b-versatile",
                         messages: [
                             { role: "system", content: "You are SmartBot. You are powered by a huge 70B knowledge base. You know everything about internet culture, celebrities, science, and history. Identify the user's language and reply 100% ONLY in that language." },
                             ...chatHistory
