@@ -2,118 +2,93 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>SmartBot Pro 🚀</title>
+    <title>SmartBot Final Edition</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
-        :root { --bg: #1a1a1a; --chat-bg: #212121; --accent: #4caf50; --error: #ff4a4a; }
-        body { font-family: sans-serif; background-color: var(--bg); color: #fff; margin: 0; display: flex; height: 100vh; }
-        #sidebar { width: 260px; background: #171717; padding: 15px; border-left: 1px solid #333; }
-        #main-chat { flex: 1; display: flex; flex-direction: column; background: var(--chat-bg); }
+        body { margin: 0; display: flex; height: 100vh; background: #1a1a1a; color: white; font-family: sans-serif; }
+        #sidebar { width: 250px; background: #111; padding: 20px; border-left: 1px solid #333; }
+        #chat-main { flex: 1; display: flex; flex-direction: column; }
         #chat-container { flex: 1; overflow-y: auto; padding: 20px; }
-        .message-row { padding: 15px; border-bottom: 1px solid #333; position: relative; }
-        .message-row:hover .actions { display: flex; }
-        .actions { display: none; position: absolute; left: 20px; top: 10px; gap: 10px; }
-        .media-output { max-width: 400px; display: block; margin-top: 10px; border-radius: 8px; }
-        #input-container { padding: 20px; background: #212121; display: flex; gap: 10px; }
-        textarea { flex: 1; background: #40414f; border: none; color: white; padding: 10px; border-radius: 8px; }
-        #admin-panel { display: none; position: fixed; top: 20%; left: 30%; background: #333; padding: 20px; z-index: 100; border-radius: 10px; }
+        .row { padding: 15px; border-bottom: 1px solid #333; position: relative; }
+        .actions { display: inline-flex; gap: 10px; margin-right: 10px; opacity: 0.5; }
+        #input-zone { padding: 20px; background: #212121; display: flex; gap: 10px; }
+        textarea { flex: 1; background: #40414f; border: none; padding: 10px; color: white; border-radius: 5px; resize: none; }
+        button { padding: 10px 20px; background: #4caf50; border: none; color: white; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div id="sidebar">
-    <button onclick="startNewChat()">+ שיחה חדשה</button>
+    <h3 ondblclick="showAdmin()">SmartBot 🚀</h3>
     <div id="history"></div>
+    <button onclick="location.reload()">שיחה חדשה</button>
 </div>
 
-<div id="main-chat">
-    <header id="header" ondblclick="toggleAdmin()">SmartBot Pro 🚀</header>
+<div id="chat-main">
     <div id="chat-container"></div>
-    <div id="input-container">
-        <textarea id="user-input" placeholder="שלח הודעה או בקש מדיה..."></textarea>
-        <button onclick="sendMessage()">שלח</button>
+    <div id="input-zone">
+        <textarea id="user-input" rows="1"></textarea>
+        <button onclick="handleSend()">שלח</button>
     </div>
 </div>
 
-<div id="admin-panel">
-    <h3>ניהול מערכת</h3>
-    <input type="text" id="api-key-input" placeholder="Groq API Key">
-    <button onclick="saveSettings()">שמור</button>
-    <button onclick="toggleAdmin()">סגור</button>
-</div>
-
 <script>
-    const firebaseConfig = { /* הכנס נתונים */ };
+    // --- 1. הגדרות בסיס ---
+    const firebaseConfig = { /* הכנס נתונים מ-Firebase כאן */ };
     firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
-    let apiKey = ""; // יטען מה-Firebase
+    let GROQ_API_KEY = "הכנס_כאן_את_המפתח_שלך";
 
-    // --- מערכת הודעות ומדיה ---
-    async function sendMessage() {
+    // --- 2. פונקציית שליחה חכמה (טקסט + מדיה) ---
+    async function handleSend() {
         const input = document.getElementById("user-input");
-        let text = input.value.trim();
+        const text = input.value.trim();
         if(!text) return;
         
-        appendMessageRow(text, "user");
+        appendRow(text, "user");
         input.value = "";
 
         const isMusic = /מוזיקה|שיר|תלחין/.test(text);
         const isVideo = /סרטון|וידאו|סרט/.test(text);
-        const isImage = /תמונה|צייר|תצייר|תיצור|תייצר/.test(text);
+        const isImage = /תמונה|צייר|תצייר|תיצור/.test(text);
 
         if (isMusic || isVideo || isImage) {
-            const prompt = text.replace(/(תמונה|צייר|תצייר|תיצור|תייצר|סרטון|וידאו|סרט|מוזיקה|שיר|תלחין|לי|את|בשביל)/gi, "").trim();
-            const enc = encodeURIComponent(prompt || "art");
+            const prompt = text.replace(/(תמונה|צייר|תצייר|תיצור|סרטון|וידאו|סרט|מוזיקה|שיר|תלחין|לי|את)/gi, "").trim();
+            const enc = encodeURIComponent(prompt || "abstract");
             const url = isMusic ? `https://pollinations.ai/music/${enc}` : 
                         isVideo ? `https://image.pollinations.ai/p/${enc}?model=turbo` : 
                         `https://image.pollinations.ai/p/${enc}?nologo=true`;
             
-            appendMessageRow(`הנה ה-${isMusic ? "מוזיקה" : isVideo ? "סרטון" : "תמונה"} שלך:`, "assistant", isMusic ? "music" : (isVideo ? "video" : "image"), url);
+            appendRow(`מייצר עבורך...`, "bot", isMusic ? "music" : (isVideo ? "video" : "image"), url);
         } else {
-            // קריאה ל-Groq
             const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                 method: "POST",
-                headers: {"Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json"},
+                headers: {"Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json"},
                 body: JSON.stringify({model: "llama-3.3-70b-versatile", messages: [{role: "user", content: text}]})
             });
             const data = await res.json();
-            appendMessageRow(data.choices[0].message.content, "assistant");
+            appendRow(data.choices[0].message.content, "bot");
         }
     }
 
-    function appendMessageRow(text, role, type=null, url=null) {
+    // --- 3. פונקציית תצוגה ועריכה ---
+    function appendRow(text, role, type=null, url=null) {
         const chat = document.getElementById("chat-container");
         const div = document.createElement("div");
-        div.className = `message-row ${role}`;
-        div.innerHTML = `<div>${text}</div> 
-                         <div class="actions">
-                            <button onclick="editMsg(this)">📝</button>
-                            <button onclick="this.parentElement.parentElement.remove()">🗑️</button>
-                         </div>`;
-        if(type === "image" || type === "video") div.innerHTML += `<img src="${url}" class="media-output">`;
-        if(type === "music") div.innerHTML += `<audio controls src="${url}"></audio>`;
+        div.className = `row ${role}`;
+        div.innerHTML = `<div>${text}</div>` + 
+            (role === 'user' ? `<div class="actions"><span onclick="edit(this)">📝</span><span onclick="this.parentElement.parentElement.remove()">🗑️</span></div>` : '');
+        
+        if(type === "image" || type === "video") div.innerHTML += `<img src="${url}" style="max-width:300px; display:block; margin-top:10px;">`;
+        if(type === "music") div.innerHTML += `<audio controls src="${url}" style="margin-top:10px;"></audio>`;
+        
         chat.appendChild(div);
         chat.scrollTop = chat.scrollHeight;
     }
 
-    function toggleAdmin() {
-        const p = document.getElementById("admin-panel");
-        p.style.display = p.style.display === "block" ? "none" : "block";
-    }
-
-    function saveSettings() {
-        apiKey = document.getElementById("api-key-input").value;
-        toggleAdmin();
-        alert("נשמר!");
-    }
-
-    function startNewChat() { document.getElementById("chat-container").innerHTML = ""; }
-    function editMsg(btn) { 
-        const txt = btn.parentElement.parentElement.innerText;
-        document.getElementById("user-input").value = txt; 
-    }
+    function edit(el) { document.getElementById("user-input").value = el.parentElement.parentElement.innerText.replace('📝🗑️', ''); }
+    function showAdmin() { GROQ_API_KEY = prompt("הכנס API Key חדש:", GROQ_API_KEY); }
 </script>
 </body>
 </html>
