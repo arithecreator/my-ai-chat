@@ -284,24 +284,6 @@
                 gmailOnlyErr: "Error: You can only register using a valid Google account ending with @gmail.com!",
                 forgotSuccess: "A password reset link has been sent to your email. Check your inbox!",
                 forgotAlertEmail: "Please enter your Gmail address in the field above first."
-            },
-            fr: {
-                dir: "ltr",
-                loginTitle: "Connexion à SmartBot", signupTitle: "Inscription à SmartBot",
-                emailPlaceholder: "Adresse e-mail", passwordPlaceholder: "Mot de passe (Min 6 caractères)",
-                loginBtn: "Se connecter", signupBtn: "S'inscrire",
-                noAccount: "Pas de compte ? ", quickSignup: "S'inscrire rapidement",
-                hasAccount: "Déjà un compte ? ", quickLogin: "Se connecter",
-                forgotPassword: "Mot de passe oublié ?", inputPlaceholder: "Envoyez un message à SmartBot...",
-                newChat: "Nouvelle discussion", logout: "Déconnexion", quotaText: "Messages utilisés aujourd'hui :",
-                quotaErr: "❌ Quota quotidien dépassé (30 messages) ! Réinitialisation demain. ⏳",
-                maintenance: "Le systeme est actuellement en maintenance. Veuillez reessayer plus tard.",
-                rename: "✏️ Renommer", deleteChat: "🗑️ Supprimer", copy: "📋 Copier", edit: "📝 Modifier",
-                promptPrompt: "Entrez le nouveau nom de la discussion :", confirmDelete: "Voulez-vous vraiment supprimer definitivement cette discussion?",
-                serverErr: "❌ Erreur de serveur, veuillez reessayer plus tard.", connErr: "❌ Erreur de connexion.",
-                gmailOnlyErr: "Erreur : Seuls les comptes Google se terminant par @gmail.com sont autorises !",
-                forgotSuccess: "Un e-mail de reinitialisation a ete envoye. Verifiez votre boite de reception !",
-                forgotAlertEmail: "Veuillez d'abord saisir votre adresse Gmail dans le champ ci-dessus."
             }
         };
 
@@ -309,7 +291,6 @@
         let userLang = navigator.language || navigator.userLanguage;
         let currentLang = "en"; 
         if (userLang.startsWith("he")) currentLang = "he";
-        else if (userLang.startsWith("fr")) currentLang = "fr";
 
         // הפעלת לוקליזציה לשפה הנבחרת
         function applyLanguageStrings() {
@@ -398,7 +379,6 @@
                 alert("הסיסמה חייבת להיות לפחות 6 תווים!");
                 return;
             }
-
             if (!email.toLowerCase().endsWith("@gmail.com")) {
                 alert(l.gmailOnlyErr);
                 return;
@@ -406,22 +386,12 @@
 
             if (isSignUpMode) {
                 auth.createUserWithEmailAndPassword(email, password)
-                    .then((userCredential) => {
-                        alert("נרשמת בהצלחה! המערכת תעביר אותך לצ'אט בעוד רגע...");
-                    })
-                    .catch(err => {
-                        console.error("Signup Error:", err);
-                        alert("שגיאת הרשמה מגוגל: " + err.message);
-                    });
+                    .then(() => alert("נרשמת בהצלחה!"))
+                    .catch(err => alert("שגיאת הרשמה: " + err.message));
             } else {
                 auth.signInWithEmailAndPassword(email, password)
-                    .then((userCredential) => {
-                        alert("התחברת בהצלחה!");
-                    })
-                    .catch(err => {
-                        console.error("Login Error:", err);
-                        alert("שגיאת התחברות מגוגל: " + err.message);
-                    });
+                    .then(() => alert("התחברת בהצלחה!"))
+                    .catch(err => alert("שגיאת התחברות: " + err.message));
             }
         }
 
@@ -434,7 +404,6 @@
 
         function logout() { auth.signOut(); }
 
-        // --- טעינת נתונים גלובליים מ-Firebase ---
         async function loadGlobalSettings() {
             const snapshot = await database.ref("global_settings").once("value");
             const data = snapshot.val() || {};
@@ -578,14 +547,33 @@
             renderHistoryList(); updateQuotaDisplayOnly();
         }
 
-        // --- פונקציית שליחת ההודעות המרכזית המשודרגת (כולל פילטר קישורי תמונות) ---
+        // --- 🌐 פונקציית עזר לביצוע חיפוש חי בגוגל/ברווז ---
+        async function fetchWebSearch(query) {
+            try {
+                const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(query))}`);
+                if (!res.ok) return "";
+                const data = await res.json();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data.contents, 'text/html');
+                const results = doc.querySelectorAll('.result__snippet');
+                let searchSnippets = "";
+                results.forEach((el, index) => {
+                    if (index < 4) searchSnippets += el.innerText + "\n";
+                });
+                return searchSnippets;
+            } catch (e) {
+                console.error("Search failed", e);
+                return "";
+            }
+        }
+
+        // --- פונקציית שליחת ההודעות המרכזית (כולל גישה חיה לגוגל) ---
         async function sendMessage() {
             const inputElement = document.getElementById("user-input");
             let userMessage = inputElement.value.trim();
             const l = languages[currentLang];
             if (!userMessage || isWaitingForBot) return;
 
-            // בדיקת מכסה
             const hasQuota = await checkAndIncrementQuota();
             if (!hasQuota) return;
 
@@ -617,44 +605,31 @@
             isWaitingForBot = true;
             const loadingId = appendLoadingRow();
 
-            // --- זיהוי מילים שמבקשות מדיה ---
             const lowerMsg = userMessage.toLowerCase();
-            const wantsImage = lowerMsg.includes("תמונה") || lowerMsg.includes("תצייר") || 
-                               lowerMsg.includes("צייר") || lowerMsg.includes("תיצור") || 
-                               lowerMsg.includes("תייצר") || lowerMsg.includes("תרכיב") || 
-                               lowerMsg.includes("תעשה") || lowerMsg.includes("תכין");
-                               
-            const wantsVideo = lowerMsg.includes("סרטון") || lowerMsg.includes("וידאו") || 
-                               lowerMsg.includes("סרט");
+            const wantsImage = lowerMsg.includes("תמונה") || lowerMsg.includes("תצייר") || lowerMsg.includes("צייר") || lowerMsg.includes("תיצור") || lowerMsg.includes("תייצר");
+            const wantsVideo = lowerMsg.includes("סרטון") || lowerMsg.includes("וידאו") || lowerMsg.includes("סרט");
 
             if (!apiKey) { alert(l.maintenance); if(document.getElementById(loadingId)) document.getElementById(loadingId).remove(); isWaitingForBot = false; return; }
 
-            // === [תיקון קריסה] בניית היסטוריית ה-Chat בצורה נקייה ומאובטחת בלי לינקים ארוכים ===
+            // ניקוי זיכרון תמונות ישן
             const chatHistory = conversations[currentConversationId].messages.slice(-12).map(msg => {
                 let cleanContent = msg.content;
-                // אם ההודעה מכילה מדיה, נשלח רק את הטקסט כדי לא לבלבל ולשבור את השרת
                 if (msg.role === "assistant" && msg.mediaUrl) {
-                    cleanContent = `[System Log: Visual media content was shown to user here. Descriptive text: ${msg.content}]`;
+                    cleanContent = `[System Log: Media generated here. Prompt context: ${msg.content}]`;
                 }
-                return {
-                    role: msg.role, content: cleanContent
-                };
+                return { role: msg.role, content: cleanContent };
             });
 
-            // --- אם המשתמש רוצה תמונה/סרטון, נשתמש ב-Groq כדי לייצר פרומפט מבוסס הקשר וזיכרון! ---
+            // 1. זרימת יצירת מדיה (תמונות/סרטונים)
             if (wantsImage || wantsVideo) {
                 try {
-                    // שימוש במודל 70B החזק ביותר להבנת השפה
                     const promptGenerationResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                         method: "POST",
                         headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
                         body: JSON.stringify({
                             model: "llama-3.3-70b-versatile",
                             messages: [
-                                { 
-                                    role: "system", 
-                                    content: "You are a prompt engineer for an AI image generator. Look at the conversation history and the user's last request. Generate a highly detailed, descriptive image prompt in English representing what the user wants to create right now. If they refer to a famous subject (like MrBeast), describe that person accurately based on your broad knowledge. Output ONLY the English prompt text. No explanations, no markdown formatting, no quotes." 
-                                },
+                                { role: "system", content: "You are a prompt engineer for an AI image generator. Generate a highly detailed descriptive prompt in English based on history. Output ONLY English text." },
                                 ...chatHistory
                             ],
                             temperature: 0.5
@@ -664,64 +639,41 @@
                     if (promptGenerationResponse.ok) {
                         const promptData = await promptGenerationResponse.json();
                         let translatedPrompt = promptData.choices[0].message.content.trim().replace(/^"|"$/g, '');
-                        
                         if(!translatedPrompt) translatedPrompt = "playground";
 
                         const encodedPrompt = encodeURIComponent(translatedPrompt);
-                        let botReplyText = "";
-                        let mediaType = "";
-                        let mediaUrl = "";
-
-                        if (wantsImage) {
-                            mediaType = "image";
-                            mediaUrl = `https://image.pollinations.ai/p/${encodedPrompt}?width=1024&height=1024&nologo=true&enhance=true&seed=${Math.floor(Math.random() * 100000)}`;
-                            botReplyText = `🎨 הנה מה שביקשת! \n\n**הפרומפט שנוצר:** "${translatedPrompt}"`;
-                        } else {
-                            mediaType = "video";
-                            mediaUrl = `https://image.pollinations.ai/p/${encodedPrompt}?width=800&height=600&enhance=true&feed=true&seed=${Math.floor(Math.random() * 100000)}`;
-                            botReplyText = `🎬 הנה האנימציה שביקשת! \n\n**הפרומפט שנוצר:** "${translatedPrompt}"`;
-                        }
+                        let mediaType = wantsImage ? "image" : "video";
+                        let mediaUrl = wantsImage ? `https://image.pollinations.ai/p/${encodedPrompt}?width=1024&height=1024&nologo=true&enhance=true&seed=${Math.floor(Math.random()*100000)}` : `https://image.pollinations.ai/p/${encodedPrompt}?width=800&height=600&enhance=true&feed=true&seed=${Math.floor(Math.random()*100000)}`;
+                        let botReplyText = wantsImage ? `🎨 הנה מה שביקשת! \n\n**הפרומפט שנוצר:** "${translatedPrompt}"` : `🎬 הנה האנימציה שביקשת! \n\n**הפרומפט שנוצר:** "${translatedPrompt}"`;
 
                         if(document.getElementById(loadingId)) document.getElementById(loadingId).remove();
                         isWaitingForBot = false;
 
                         const botIndex = conversations[currentConversationId].messages.length;
-                        conversations[currentConversationId].messages.push({ 
-                            role: "assistant", content: botReplyText, mediaType: mediaType, mediaUrl: mediaUrl 
-                        });
-                        
+                        conversations[currentConversationId].messages.push({ role: "assistant", content: botReplyText, mediaType: mediaType, mediaUrl: mediaUrl });
                         appendMessageRow(botReplyText, "assistant", botIndex, mediaType, mediaUrl);
                         localStorage.setItem(`groq_convs_${currentUser.uid}`, JSON.stringify(conversations));
                         return;
                     }
-                } catch (e) {
-                    console.error("Failed to generate contextual prompt", e);
-                }
-                
-                // מנגנון גיבוי ידני
-                let promptClean = userMessage.replace(/(?:^|\s)(תמונה|תצייר|צייר|סרטון|וידאו|סרט|תיצור|תייצר|תרכיב|תעשה|תכין|לי|של|שלי|בשבילי)(?=\s|$)/gi, "").trim();
-                if(!promptClean) promptClean = "playground";
-                let translatedPrompt = promptClean;
-                try {
-                    const translateRes = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(promptClean)}&langpair=he|en`);
-                    if (translateRes.ok) { const translateData = await translateRes.json(); translatedPrompt = translateData.responseData.translatedText; }
-                } catch (e) { translatedPrompt = promptClean; }
-
-                const encodedPrompt = encodeURIComponent(translatedPrompt);
-                let mediaType = wantsImage ? "image" : "video";
-                let mediaUrl = wantsImage ? `https://image.pollinations.ai/p/${encodedPrompt}?width=1024&height=1024&nologo=true&enhance=true` : `https://image.pollinations.ai/p/${encodedPrompt}?width=800&height=600&enhance=true&feed=true`;
-                let botReplyText = `🎨 הנה מה שביקשת: "${translatedPrompt}"`;
-
-                if(document.getElementById(loadingId)) document.getElementById(loadingId).remove();
-                isWaitingForBot = false;
-                const botIndex = conversations[currentConversationId].messages.length;
-                conversations[currentConversationId].messages.push({ role: "assistant", content: botReplyText, mediaType: mediaType, mediaUrl: mediaUrl });
-                appendMessageRow(botReplyText, "assistant", botIndex, mediaType, mediaUrl);
-                localStorage.setItem(`groq_convs_${currentUser.uid}`, JSON.stringify(conversations));
+                } catch (e) { console.error(e); }
                 return;
             }
 
-            // --- זרימה רגילה ל-Groq טקסט בלבד (מודל 70B החכם) ---
+            // 2. 🌐 זרימת טקסט חכמה עם חיפוש חי בגוגל (Web Search)
+            let searchResultsText = "";
+            const isQuestionOrEntity = userMessage.length > 3 && !lowerMsg.includes("היי") && !lowerMsg.includes("שלום") && !lowerMsg.includes("מה קורה");
+            
+            if (isQuestionOrEntity) {
+                // המערכת מחפשת ברשת באופן אוטומטי כדי לקבל רקע עדכני
+                searchResultsText = await fetchWebSearch(userMessage);
+            }
+
+            const systemPrompt = `You are SmartBot. You are connected to the live internet. 
+Here is live information from Google search results regarding the user's current input, use it to give accurate, non-hallucinated and fully updated information (especially about internet culture, YouTubers like MrBeast, celebrities, and new trends):
+${searchResultsText}
+
+Identify the user's language and reply 100% ONLY in that language. Be engaging and smart!`;
+
             try {
                 const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                     method: "POST",
@@ -729,7 +681,7 @@
                     body: JSON.stringify({
                         model: "llama-3.3-70b-versatile",
                         messages: [
-                            { role: "system", content: "You are SmartBot. You are powered by a huge 70B knowledge base. You know everything about internet culture, celebrities, science, and history. Identify the user's language and reply 100% ONLY in that language." },
+                            { role: "system", content: systemPrompt },
                             ...chatHistory
                         ],
                         temperature: 0.6
@@ -785,7 +737,7 @@
                 content.appendChild(img);
             } else if (mediaType === "video" && mediaUrl) {
                 const imgVid = document.createElement("img");
-                imgVid.src = mediaUrl; imgVid.className = "media-output"; imgVid.alt = "AI Generated Video Animation";
+                imgVid.src = mediaUrl; imgVid.className = "media-output"; imgVid.alt = "AI Generated Video";
                 content.appendChild(imgVid);
             }
 
