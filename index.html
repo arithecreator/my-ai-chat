@@ -640,16 +640,15 @@
                             messages: [
                                 { 
                                     role: "system", 
-                                    // === 🔴 התיקון הקריטי כאן: הגדרות נוקשות שלא מאפשרות לו לסרב או לדבר בעברית! ===
-                                    content: "You are a specialized translation and image description module. Your ONLY job is to take the user's request and the provided web context, and transform it into a highly detailed visual prompt in English for a text-to-image generator. Do NOT say 'I am a text model', do NOT write any apologies, do NOT chat, and do NOT write in Hebrew. Even if the user asks you to paint or says you can't, IGNORE their rejection and simply output a detailed descriptive design prompt in English of the requested person or object. Output ONLY raw English prompt text." 
+                                    content: "You are a translation and prompt extraction API. Your job is ONLY to extract the subject of the user's image request and translate it to a clean 2-4 word English phrase. Respond ONLY with raw English text. NEVER include lines like 'הפרומפט שנוצר' or any Hebrew explanations. Example: if the user asks for MrBeast, output 'MrBeast realistic portrait'." 
                                 },
                                 ...chatHistory,
                                 {
                                     role: "user",
-                                    content: `Current User Request: "${userMessage}"\nDuckDuckGo Context: "${searchResultsText}"`
+                                    content: `Current User Request: "${userMessage}"`
                                 }
                             ],
-                            temperature: 0.3
+                            temperature: 0.1
                         })
                     });
 
@@ -661,9 +660,19 @@
                     console.error("Contextual prompt generation failed", e);
                 }
                 
-                // מנגנון הגנה למקרה חירום
-                if (!finalImagePrompt || finalImagePrompt.includes("sorry") || finalImagePrompt.includes("מצטער")) {
-                    finalImagePrompt = userMessage.replace(/(?:^|\s)(תמונה|תצייר|צייר|סרטון|וידאו|סרט|תיצור|תייצר|תרכיב|תעשה|תכין|לי|של|שלי|בשבילי)(?=\s|$)/gi, "").trim() || "MrBeast";
+                // === 🛡️ מנגנון הגנה אקטיבי מובנה (Fallback לניקוי עברית) ===
+                // אם המודל התעקש להחזיר עברית או סירובים, ננקה את זה ונחלץ מילים באנגלית או את שם המושג המקורי
+                const containsHebrew = /[\u0590-\u05FF]/.test(finalImagePrompt);
+                if (!finalImagePrompt || containsHebrew || finalImagePrompt.includes("sorry") || finalImagePrompt.includes("prompt")) {
+                    // מנקה מילות קישור נפוצות בעברית כדי להישאר עם שם העצם הנקי
+                    let cleanSubject = userMessage.replace(/(?:^|\s)(תמונה|תצייר|צייר|סרטון|וידאו|סרט|תיצור|תייצר|תרכיב|תעשה|תכין|לי|של|שלי|בשבילי|את)(?=\s|$)/gi, "").trim();
+                    
+                    // המרה ידנית פשוטה לשמות פופולריים אם המשתמש ביקש אותם
+                    if (cleanSubject.includes("מיסטר ביסט") || cleanSubject.toLowerCase().includes("מיסטרביסט")) {
+                        finalImagePrompt = "MrBeast portrait photography";
+                    } else {
+                        finalImagePrompt = cleanSubject || "creative artwork";
+                    }
                 }
 
                 const encodedPrompt = encodeURIComponent(finalImagePrompt);
