@@ -562,7 +562,7 @@
             }
         }
 
-        // --- פונקציית שליחת ההודעות המרכזית (כולל גישה חיה לגוגל) ---
+        // --- פונקציית שליחת ההודעות המרכזית ---
         async function sendMessage() {
             const inputElement = document.getElementById("user-input");
             let userMessage = inputElement.value.trim();
@@ -606,7 +606,7 @@
 
             if (!apiKey) { alert(l.maintenance); if(document.getElementById(loadingId)) document.getElementById(loadingId).remove(); isWaitingForBot = false; return; }
 
-            // === [תיקון קריסה] בניית היסטוריית ה-Chat בצורה נקייה ומאובטחת ===
+            // בניית היסטוריית ה-Chat בצורה נקייה
             const chatHistory = conversations[currentConversationId].messages.slice(-12).map(msg => {
                 let cleanContent = msg.content;
                 if (msg.role === "assistant" && msg.mediaUrl) {
@@ -615,7 +615,7 @@
                 return { role: msg.role, content: cleanContent };
             });
 
-            // 1. 🌐 חיפוש חי ברשת (DuckDuckGo) כדי לקבל רקע עדכני
+            // 1. חיפוש חי ברשת
             let searchResultsText = "";
             const isQuestionOrEntity = userMessage.length > 3 && !lowerMsg.includes("היי") && !lowerMsg.includes("שלום") && !lowerMsg.includes("מה קורה");
             
@@ -623,9 +623,9 @@
                 searchResultsText = await fetchWebSearch(userMessage);
             }
 
-            // === 💡 [תיקון פרומפט המדיה] שימוש ב-Groq כדי לכתוב תיאור גרפי מדויק באנגלית ===
-            let finalImagePrompt = "";
+            // === 🖼️ זרימת יצירת מדיה (תמונות וסרטונים) ===
             if (wantsImage || wantsVideo) {
+                let finalImagePrompt = "";
                 try {
                     const promptGenerationResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                         method: "POST",
@@ -655,12 +655,10 @@
                     console.error("Contextual prompt generation failed", e);
                 }
                 
-                // fallback אם הפרומפט נכשל
                 if (!finalImagePrompt) {
                     finalImagePrompt = userMessage.replace(/(?:^|\s)(תמונה|תצייר|צייר|סרטון|וידאו|סרט|תיצור|תייצר|תרכיב|תעשה|תכין|לי|של|שלי|בשבילי)(?=\s|$)/gi, "").trim() || "playground";
                 }
 
-                // 2. יצירת המדיה מהפרומפט האנגלי הנקי
                 const encodedPrompt = encodeURIComponent(finalImagePrompt);
                 let mediaType = wantsImage ? "image" : "video";
                 let mediaUrl = wantsImage ? `https://image.pollinations.ai/p/${encodedPrompt}?width=1024&height=1024&nologo=true&enhance=true&seed=${Math.floor(Math.random()*100000)}` : `https://image.pollinations.ai/p/${encodedPrompt}?width=800&height=600&enhance=true&feed=true&seed=${Math.floor(Math.random()*100000)}`;
@@ -670,13 +668,16 @@
                 isWaitingForBot = false;
 
                 const botIndex = conversations[currentConversationId].messages.length;
+                
+                // === תיקון קריטי: שמירה והצגה ישירה עם הפרמטרים הנכונים של המדיה! ===
                 conversations[currentConversationId].messages.push({ role: "assistant", content: botReplyText, mediaType: mediaType, mediaUrl: mediaUrl });
                 appendMessageRow(botReplyText, "assistant", botIndex, mediaType, mediaUrl);
+                
                 localStorage.setItem(`groq_convs_${currentUser.uid}`, JSON.stringify(conversations));
                 return;
             }
 
-            // 3. זרימת טקסט חכמה עם חיפוש חי (Web Search)
+            // 3. זרימת טקסט חכמה רגילה
             const systemPrompt = `You are SmartBot. You are connected to the live internet using DuckDuckGo. 
 Here is live information from DuckDuckGo search results regarding the user's current input, use it to give accurate, non-hallucinated and fully updated information:
 ${searchResultsText}
@@ -738,8 +739,13 @@ Identify the user's language and reply 100% ONLY in that language. Be engaging a
             
             const content = document.createElement("div");
             content.className = "message-content";
-            content.innerText = text;
+            
+            // הצגת הטקסט
+            const textNode = document.createElement("div");
+            textNode.innerText = text;
+            content.appendChild(textNode);
 
+            // === תיקון התצוגה המעוותת: הזרקת האלמנטים הנכונים ישירות ל-DOM ===
             if (mediaType === "image" && mediaUrl) {
                 const img = document.createElement("img");
                 img.src = mediaUrl; img.className = "media-output"; img.alt = "AI Generated Image";
