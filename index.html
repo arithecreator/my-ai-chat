@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartBot 🚀</title>
+    <!-- טעינת ספריות Firebase הרשמיות של גוגל -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
@@ -176,6 +177,7 @@
 </head>
 <body>
 
+    <!-- מסך כניסה / הרשמה -->
     <div id="auth-screen">
         <div class="auth-container">
             <h2 id="auth-title">התחברות ל-SmartBot</h2>
@@ -187,11 +189,13 @@
         </div>
     </div>
 
+    <!-- תפריט 3 נקודות צף גלובלי -->
     <div id="global-context-menu" class="context-menu">
         <button id="menu-rename-btn" onclick="triggerRenameChat()">✏️ שנה שם</button>
         <button id="menu-delete-btn" onclick="triggerDeleteChat()" style="color: var(--error-color);">🗑️ מחק שיחה</button>
     </div>
 
+    <!-- המבנה הראשי של האפליקציה -->
     <div id="app-layout">
         <div id="sidebar">
             <button id="new-chat-btn" onclick="startNewChat()"><span id="lbl-new-chat">שיחה חדשה</span> <span>+</span></button>
@@ -216,6 +220,7 @@
         </div>
     </div>
 
+    <!-- פאנל ניהול סודי -->
     <div id="admin-panel">
         <h3>🔑 הגדרות ניהול SmartBot</h3>
         <div class="admin-group"><label>מפתח Groq API:</label><input type="text" id="api-key-input" placeholder="gsk_..."></div>
@@ -573,7 +578,7 @@
             renderHistoryList(); updateQuotaDisplayOnly();
         }
 
-        // --- פונקציית שליחת ההודעות המרכזית המשודרגת (כולל זיכרון חכם לתמונות) ---
+        // --- פונקציית שליחת ההודעות המרכזית המשודרגת (מודל חכם במיוחד + זיכרון) ---
         async function sendMessage() {
             const inputElement = document.getElementById("user-input");
             let userMessage = inputElement.value.trim();
@@ -632,16 +637,16 @@
             // --- אם המשתמש רוצה תמונה/סרטון, נשתמש ב-Groq כדי לייצר פרומפט מבוסס הקשר וזיכרון! ---
             if (wantsImage || wantsVideo) {
                 try {
-                    // אנחנו שואלים את ה-AI מה המשתמש באמת רוצה לצייר בהתבסס על ההיסטוריה
+                    // החלפה ל-llama-3.3-70b-specdec כדי שיבין מושגים מורכבים וסלבריטאים מהר יותר
                     const promptGenerationResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                         method: "POST",
                         headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
                         body: JSON.stringify({
-                            model: "llama-3.1-8b-instant",
+                            model: "llama-3.3-70b-specdec",
                             messages: [
                                 { 
                                     role: "system", 
-                                    content: "You are a prompt engineer for an AI image generator. Look at the conversation history and the user's last request. Generate a highly detailed, descriptive image prompt in English representing what the user wants to create right now. If they refer to a subject discussed earlier (like a person, character, or object), include that subject in the prompt. Output ONLY the English prompt text. No explanations, no markdown formatting, no quotes." 
+                                    content: "You are a prompt engineer for an AI image generator. Look at the conversation history and the user's last request. Generate a highly detailed, descriptive image prompt in English representing what the user wants to create right now. If they refer to a famous subject (like MrBeast), describe that person accurately based on your broad knowledge. Output ONLY the English prompt text. No explanations, no markdown formatting, no quotes." 
                                 },
                                 ...chatHistory
                             ],
@@ -653,7 +658,6 @@
                         const promptData = await promptGenerationResponse.json();
                         let translatedPrompt = promptData.choices[0].message.content.trim().replace(/^"|"$/g, '');
                         
-                        // גיבוי למקרה שהתקבל משהו ריק
                         if(!translatedPrompt) translatedPrompt = "playground";
 
                         const encodedPrompt = encodeURIComponent(translatedPrompt);
@@ -684,14 +688,155 @@
                         return;
                     }
                 } catch (e) {
-                    console.error("Failed to generate contextual prompt, falling back to basic translation", e);
+                    console.error("Failed to generate contextual prompt", e);
                 }
                 
-                // --- מנגנון גיבוי (Fallback) למקרה ששרת הפרומפטים נכשל ---
+                // מנגנון גיבוי ידני
                 let promptClean = userMessage.replace(/(?:^|\s)(תמונה|תצייר|צייר|סרטון|וידאו|סרט|תיצור|תייצר|תרכיב|תעשה|תכין|לי|של|שלי|בשבילי)(?=\s|$)/gi, "").trim();
                 if(!promptClean) promptClean = "playground";
                 let translatedPrompt = promptClean;
                 try {
                     const translateRes = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(promptClean)}&langpair=he|en`);
                     if (translateRes.ok) { const translateData = await translateRes.json(); translatedPrompt = translateData.responseData.translatedText; }
+                } catch (e) { translatedPrompt = promptClean; }
+
+                const encodedPrompt = encodeURIComponent(translatedPrompt);
+                let mediaType = wantsImage ? "image" : "video";
+                let mediaUrl = wantsImage ? `https://image.pollinations.ai/p/${encodedPrompt}?width=1024&height=1024&nologo=true&enhance=true` : `https://image.pollinations.ai/p/${encodedPrompt}?width=800&height=600&enhance=true&feed=true`;
+                let botReplyText = `🎨 הנה מה שביקשת (ללא הקשר שיחה): "${translatedPrompt}"`;
+
+                if(document.getElementById(loadingId)) document.getElementById(loadingId).remove();
+                isWaitingForBot = false;
+                const botIndex = conversations[currentConversationId].messages.length;
+                conversations[currentConversationId].messages.push({ role: "assistant", content: botReplyText, mediaType: mediaType, mediaUrl: mediaUrl });
+                appendMessageRow(botReplyText, "assistant", botIndex, mediaType, mediaUrl);
+                localStorage.setItem(`groq_convs_${currentUser.uid}`, JSON.stringify(conversations));
+                return;
+            }
+
+            // --- זרימה רגילה ל-Groq (טקסט בלבד - שודרג למודל 70B החכם ביותר) ---
+            try {
+                const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                    method: "POST",
+                    headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        model: "llama-3.3-70b-specdec",
+                        messages: [
+                            { role: "system", content: "You are SmartBot. You are powered by a huge 70B knowledge base. You know everything about internet culture, celebrities, science, and history. Identify the user's language and reply 100% ONLY in that language." },
+                            ...chatHistory
+                        ],
+                        temperature: 0.6
+                    })
+                });
+
+                const data = await response.json();
+                if(document.getElementById(loadingId)) document.getElementById(loadingId).remove();
+                isWaitingForBot = false;
+
+                if (response.ok) {
+                    const botReply = data.choices[0].message.content;
+                    const botIndex = conversations[currentConversationId].messages.length;
+                    conversations[currentConversationId].messages.push({ role: "assistant", content: botReply });
+                    appendMessageRow(botReply, "assistant", botIndex);
+                    localStorage.setItem(`groq_convs_${currentUser.uid}`, JSON.stringify(conversations));
+                } else {
+                    appendMessageRow(l.serverErr, "error");
                 }
+            } catch (error) {
+                if(document.getElementById(loadingId)) document.getElementById(loadingId).remove();
+                isWaitingForBot = false; appendMessageRow(l.connErr, "error");
+            }
+        }
+
+        // --- עזרי תצוגה, העתקה ועריכה ---
+        function copyMessage(index) {
+            const txt = conversations[currentConversationId].messages[index].content;
+            navigator.clipboard.writeText(txt);
+        }
+
+        function editUserMessage(index) {
+            if (isWaitingForBot) return;
+            const txt = conversations[currentConversationId].messages[index].content;
+            const inputElement = document.getElementById("user-input");
+            inputElement.value = txt; inputElement.focus(); adjustTextareaHeight(inputElement);
+            document.getElementById("send-btn").disabled = false;
+            editingMessageIndex = index;
+        }
+
+        function appendMessageRow(text, role, index = null, mediaType = null, mediaUrl = null) {
+            const chatContainer = document.getElementById("chat-container");
+            const row = document.createElement("div");
+            row.className = `message-row ${role}`;
+            
+            const content = document.createElement("div");
+            content.className = "message-content";
+            content.innerText = text;
+
+            if (mediaType === "image" && mediaUrl) {
+                const img = document.createElement("img");
+                img.src = mediaUrl; img.className = "media-output"; img.alt = "AI Generated Image";
+                content.appendChild(img);
+            } else if (mediaType === "video" && mediaUrl) {
+                const imgVid = document.createElement("img");
+                imgVid.src = mediaUrl; imgVid.className = "media-output"; imgVid.alt = "AI Generated Video Animation";
+                content.appendChild(imgVid);
+            }
+
+            row.appendChild(content);
+            
+            const l = languages[currentLang];
+            if ((role === "user" || role === "assistant") && index !== null) {
+                const actions = document.createElement("div"); actions.className = "message-actions";
+                const copyBtn = document.createElement("button"); copyBtn.className = "action-btn"; copyBtn.innerHTML = `${l.copy}`; copyBtn.onclick = () => copyMessage(index); actions.appendChild(copyBtn);
+                if (role === "user") { const editBtn = document.createElement("button"); editBtn.className = "action-btn"; editBtn.innerHTML = `${l.edit}`; editBtn.onclick = () => editUserMessage(index); actions.appendChild(editBtn); }
+                row.appendChild(actions);
+            }
+            chatContainer.appendChild(row); chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function appendLoadingRow() {
+            const chatContainer = document.getElementById("chat-container");
+            const id = "loader_" + Date.now();
+            const row = document.createElement("div"); row.className = "message-row assistant"; row.id = id;
+            const content = document.createElement("div"); content.className = "message-content";
+            const loader = document.createElement("div"); loader.className = "dots-loader"; loader.innerHTML = "<span></span><span></span><span></span><span></span>"; content.appendChild(loader); row.appendChild(content);
+            chatContainer.appendChild(row); chatContainer.scrollTop = chatContainer.scrollHeight;
+            return id;
+        }
+
+        function adjustTextareaHeight(element) { element.style.height = "auto"; element.style.height = (element.scrollHeight) + "px"; }
+        function handleKeyPress(event) { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); sendMessage(); } }
+
+        // --- פאנל הניהול הראשי בלחיצה כפולה ---
+        document.getElementById("header-title").addEventListener("dblclick", () => {
+            const password = prompt("הכנס סיסמה:");
+            if (password === adminPassword) {
+                toggleAdminPanel();
+                document.getElementById("api-key-input").value = apiKey;
+                document.getElementById("site-name-input").value = siteName;
+                document.getElementById("admin-pass-input").value = adminPassword;
+            } else if (password !== null) { alert("סיסמה שגויה!"); }
+        });
+
+        function toggleAdminPanel() {
+            const panel = document.getElementById("admin-panel");
+            panel.style.display = panel.style.display === "block" ? "none" : "block";
+        }
+
+        function saveAdminSettings() {
+            const keyInput = document.getElementById("api-key-input").value.trim();
+            const nameInput = document.getElementById("site-name-input").value.trim();
+            const passInput = document.getElementById("admin-pass-input").value.trim();
+
+            const updates = {};
+            if (keyInput) updates.api_key = keyInput;
+            if (nameInput) updates.site_name = nameInput;
+            if (passInput) updates.admin_password = passInput;
+
+            database.ref("global_settings").update(updates).then(() => {
+                alert("השינויים נשמרו בהצלחה!"); loadGlobalSettings(); toggleAdminPanel();
+            }).catch(err => alert("שגיאה בשמירה: " + err.message));
+        }
+    </script>
+</body>
+</html>
