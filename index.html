@@ -295,7 +295,7 @@
                 forgotPassword: "Mot de passe oublié ?", inputPlaceholder: "Envoyez un message à SmartBot...",
                 newChat: "Nouvelle discussion", logout: "Déconnexion", quotaText: "Messages utilisés aujourd'hui :",
                 quotaErr: "❌ Quota quotidien dépassé (30 messages) ! Réinitialisation demain. ⏳",
-                maintenance: "Le système est actuellement en maintenance. Veuillez réessayer plus tard.",
+                maintenance: "Le système is currently undergoing maintenance. Veuillez réessayer plus tard.",
                 rename: "✏️ Renommer", deleteChat: "🗑️ Supprimer", copy: "📋 Copier", edit: "📝 Modifier",
                 promptPrompt: "Entrez le nouveau nom de la discussion :", confirmDelete: "Voulez-vous vraiment supprimer définitivement cette discussion?",
                 serverErr: "❌ Erreur de serveur, veuillez réessayer plus tard.", connErr: "❌ Erreur de connexion.",
@@ -578,7 +578,7 @@
             renderHistoryList(); updateQuotaDisplayOnly();
         }
 
-        // --- פונקציית שליחת ההודעות המרכזית (גרסה חכמה במיוחד - כולל תרגום אוטומטי לאנגלית) ---
+        // --- פונקציית שליחת ההודעות המרכזית המתוקנת (תרגום מובנה ואמין) ---
         async function sendMessage() {
             const inputElement = document.getElementById("user-input");
             let userMessage = inputElement.value.trim();
@@ -617,57 +617,36 @@
             isWaitingForBot = true;
             const loadingId = appendLoadingRow();
 
-            // --- זיהוי מורחב ומקיף של מילים שמבקשות מדיה ---
+            // --- זיהוי מילים שמבקשות מדיה ---
             const lowerMsg = userMessage.toLowerCase();
-            
             const wantsImage = lowerMsg.includes("תמונה") || lowerMsg.includes("תצייר") || 
                                lowerMsg.includes("צייר") || lowerMsg.includes("תיצור") || 
                                lowerMsg.includes("תייצר") || lowerMsg.includes("תרכיב") || 
-                               lowerMsg.includes("תעשה") || lowerMsg.includes("תכין") ||
-                               lowerMsg.includes("image") || lowerMsg.includes("picture") || lowerMsg.includes("draw");
+                               lowerMsg.includes("תעשה") || lowerMsg.includes("תכין");
                                
             const wantsVideo = lowerMsg.includes("סרטון") || lowerMsg.includes("וידאו") || 
-                               lowerMsg.includes("סרט") || lowerMsg.includes("video") || 
-                               lowerMsg.includes("movie") || lowerMsg.includes("animation");
+                               lowerMsg.includes("סרט");
 
             if (wantsImage || wantsVideo) {
-                if (!apiKey) { alert(l.maintenance); if(document.getElementById(loadingId)) document.getElementById(loadingId).remove(); isWaitingForBot = false; return; }
+                // מנקים מילים כלליות כדי להישאר רק עם תיאור הגרפיקה הנקי
+                let promptClean = userMessage.replace(/(?:^|\s)(תמונה|תצייר|צייר|סרטון|וידאו|סרט|תיצור|תייצר|תרכיב|תעשה|תכין|לי|של|שלי|בשבילי)(?=\s|$)/gi, "").trim();
+                if(!promptClean) promptClean = "playground";
 
-                // מנקים מילים כלליות רק כדי לחלץ את מהות התיאור
-                let promptClean = userMessage.replace(/(?:^|\s)(תמונה|תצייר|צייר|סרטון|וידאו|סרט|תיצור|תייצר|תרכיב|תעשה|תכין|לי|של|שלי|בשבילי|image|picture|video|draw|create|make|of)(?=\s|$)/gi, "").trim();
-                if(!promptClean) promptClean = "beautiful dynamic scene";
+                let translatedPrompt = promptClean;
 
-                let translatedPrompt = "beautiful dynamic scene";
-
-                // --- שלב התרגום וההרחבה הסודי: הופכים את התיאור של המשתמש לפרומפט מקצועי באנגלית באמצעות Groq ---
+                // --- תרגום אמין ישירות מהדפדפן ללא חסימות CORS ---
                 try {
-                    const translationResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                        method: "POST",
-                        headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            model: "llama-3.1-8b-instant",
-                            messages: [
-                                { 
-                                    role: "system", 
-                                    content: "You are an expert AI image prompt generator. Your only job is to translate the user's description into a high-quality, clear, descriptive English prompt for Stable Diffusion. Output ONLY the raw English translation/prompt. No explanations, no introduction, no conversation. Just the text." 
-                                },
-                                { role: "user", content: promptClean }
-                            ],
-                            temperature: 0.3
-                        })
-                    });
-
-                    if (translationResponse.ok) {
-                        const translationData = await translationResponse.json();
-                        translatedPrompt = translationData.choices[0].message.content.trim();
-                    } else {
-                        translatedPrompt = promptClean; // פולבק במקרה של בעיה זמנית
+                    const translateRes = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(promptClean)}&langpair=he|en`);
+                    if (translateRes.ok) {
+                        const translateData = await translateRes.json();
+                        translatedPrompt = translateData.responseData.translatedText;
                     }
                 } catch (e) {
+                    console.error("Translation failed, using original text", e);
                     translatedPrompt = promptClean;
                 }
 
-                // קידוד בטוח ל-URL של האנגלית המתורגמת
+                // קידוד בטוח ל-URL
                 const encodedPrompt = encodeURIComponent(translatedPrompt);
                 let botReplyText = "";
                 let mediaType = "";
@@ -676,11 +655,11 @@
                 if (wantsImage) {
                     mediaType = "image";
                     mediaUrl = `https://image.pollinations.ai/p/${encodedPrompt}?width=1024&height=1024&nologo=true&enhance=true&seed=${Math.floor(Math.random() * 100000)}`;
-                    botReplyText = `🎨 הנה מה שביקשת! \n\n**מה שביקשת:** "${promptClean}"\n**התרגום המדויק שנשלח לציור:** "${translatedPrompt}" ✨`;
+                    botReplyText = `🎨 הנה מה שביקשת! \n\n**מה שביקשת:** "${promptClean}"\n**תורגם לאנגלית:** "${translatedPrompt}"`;
                 } else {
                     mediaType = "video";
                     mediaUrl = `https://image.pollinations.ai/p/${encodedPrompt}?width=800&height=600&enhance=true&feed=true&seed=${Math.floor(Math.random() * 100000)}`;
-                    botReplyText = `🎬 הנה האנימציה שביקשת! \n\n**מה שביקשת:** "${promptClean}"\n**התרגום המדויק שנשלח ליצירה:** "${translatedPrompt}" 🚀`;
+                    botReplyText = `🎬 הנה האנימציה שביקשת! \n\n**מה שביקשת:** "${promptClean}"\n**תורגם לאנגלית:** "${translatedPrompt}"`;
                 }
 
                 if(document.getElementById(loadingId)) document.getElementById(loadingId).remove();
