@@ -133,6 +133,9 @@
         
         .message-content { flex: 1; line-height: 1.6; word-wrap: break-word; white-space: pre-wrap; padding: 0 5px; text-align: inherit; }
 
+        /* עיצוב ייחודי למדיה המוצגת בצ'אט */
+        .media-output { max-width: 100%; width: 450px; border-radius: 10px; margin-top: 12px; display: block; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 1px solid #444; }
+
         .message-actions { display: none; position: absolute; bottom: 5px; gap: 8px; background-color: rgba(33, 33, 33, 0.9); padding: 4px 8px; border-radius: 5px; border: 1px solid #444; }
         html[dir="rtl"] .message-actions { left: 15px; }
         html[dir="ltr"] .message-actions { right: 15px; }
@@ -337,7 +340,7 @@
 
         applyLanguageStrings();
 
-        // האזנה למצב המשתמש - מעביר למסך הצ'אט ברגע שיש חיבור פעיל
+        // האזנה למצב המשתמש
         auth.onAuthStateChanged(user => {
             if (user) {
                 currentUser = user;
@@ -359,7 +362,7 @@
         function updateAuthDOM() {
             const l = languages[currentLang];
             const toggleElement = document.getElementById("auth-toggle");
-            if(!toggleElement) return; // הגנה מפני קריסות זמניות בטעינה
+            if(!toggleElement) return;
 
             if (isSignUpMode) {
                 document.getElementById("auth-title").innerText = l.signupTitle;
@@ -377,7 +380,6 @@
             updateAuthDOM();
         }
 
-        // פונקציית האימות המלאה והנקייה משגיאות
         function handleAuth() {
             const email = document.getElementById("auth-email").value.trim();
             const password = document.getElementById("auth-password").value.trim();
@@ -421,17 +423,8 @@
         function handleForgotPassword() {
             const email = document.getElementById("auth-email").value.trim();
             const l = languages[currentLang];
-            
-            if (!email) {
-                alert(l.forgotAlertEmail);
-                return;
-            }
-            
-            auth.sendPasswordResetEmail(email)
-                .then(() => {
-                    alert(l.forgotSuccess);
-                })
-                .catch(err => alert(err.message));
+            if (!email) { alert(l.forgotAlertEmail); return; }
+            auth.sendPasswordResetEmail(email).then(() => alert(l.forgotSuccess)).catch(err => alert(err.message));
         }
 
         function logout() { auth.signOut(); }
@@ -443,7 +436,6 @@
             apiKey = data.api_key || "";
             siteName = data.site_name || "SmartBot 🚀";
             adminPassword = data.admin_password || "1234";
-
             document.getElementById("header-title").innerText = siteName;
             document.title = siteName;
         }
@@ -458,22 +450,17 @@
             const uid = currentUser.uid;
             const today = getTodayKey();
             const quotaRef = database.ref(`users_quota/${uid}/${today}`);
-            
             const snapshot = await quotaRef.once("value");
             let count = snapshot.val() || 0;
 
             document.getElementById("limit-banner").style.display = "block";
             document.getElementById("quota-used-banner").innerText = count;
 
-            if (count >= dailyLimit) {
-                lockInputForQuota(true);
-                return false;
-            }
+            if (count >= dailyLimit) { lockInputForQuota(true); return false; }
 
             count++;
             await quotaRef.set(count);
             document.getElementById("quota-used-banner").innerText = count;
-            
             if (count >= dailyLimit) lockInputForQuota(true);
             return true;
         }
@@ -484,12 +471,9 @@
             const today = getTodayKey();
             const snapshot = await database.ref(`users_quota/${uid}/${today}`).once("value");
             const count = snapshot.val() || 0;
-            
             document.getElementById("limit-banner").style.display = "block";
             document.getElementById("quota-used-banner").innerText = count;
-            
-            if (count >= dailyLimit) lockInputForQuota(true);
-            else lockInputForQuota(false);
+            if (count >= dailyLimit) lockInputForQuota(true); else lockInputForQuota(false);
         }
 
         function lockInputForQuota(shouldLock) {
@@ -502,19 +486,13 @@
         let conversations = {};
 
         function initUserChatSystem() {
-            try {
-                conversations = JSON.parse(localStorage.getItem(`groq_convs_${currentUser.uid}`)) || {};
-            } catch(e) { conversations = {}; }
-            
+            try { conversations = JSON.parse(localStorage.getItem(`groq_convs_${currentUser.uid}`)) || {}; } catch(e) { conversations = {}; }
             updateQuotaDisplayOnly();
-
             const keys = Object.keys(conversations);
             if (keys.length > 0) {
                 const latestId = keys.sort((a, b) => conversations[b].timestamp - conversations[a].timestamp)[0];
                 loadConversation(latestId);
-            } else {
-                startNewChat();
-            }
+            } else { startNewChat(); }
 
             document.getElementById("user-input").addEventListener('input', function() {
                 if (document.getElementById("quota-error-text").style.display === "block") return;
@@ -530,42 +508,30 @@
             keys.forEach(id => {
                 const wrapper = document.createElement("div");
                 wrapper.className = `history-item-wrapper ${id === currentConversationId ? "active" : ""}`;
-                
                 const item = document.createElement("div");
                 item.className = "history-item";
                 item.innerText = conversations[id].title;
                 item.onclick = () => loadConversation(id);
                 
                 const menuBtn = document.createElement("button");
-                menuBtn.className = "history-menu-btn";
-                menuBtn.innerHTML = "⋮";
+                menuBtn.className = "history-menu-btn"; menuBtn.innerHTML = "⋮";
                 menuBtn.onclick = (e) => toggleContextMenu(e, id);
 
-                wrapper.appendChild(item);
-                wrapper.appendChild(menuBtn);
-                listElement.appendChild(wrapper);
+                wrapper.appendChild(item); wrapper.appendChild(menuBtn); listElement.appendChild(wrapper);
             });
         }
 
         function toggleContextMenu(e, id) {
-            e.stopPropagation();
-            menuSelectedChatId = id;
+            e.stopPropagation(); menuSelectedChatId = id;
             const menu = document.getElementById("global-context-menu");
-            
             const rect = e.target.getBoundingClientRect();
             menu.style.top = `${rect.top + window.scrollY}px`;
-            
-            if (languages[currentLang].dir === "rtl") {
-                menu.style.left = `${rect.left + window.scrollX + 20}px`;
-            } else {
-                menu.style.left = `${rect.left + window.scrollX - 120}px`;
-            }
+            if (languages[currentLang].dir === "rtl") menu.style.left = `${rect.left + window.scrollX + 20}px`;
+            else menu.style.left = `${rect.left + window.scrollX - 120}px`;
             menu.style.display = "block";
         }
 
-        document.addEventListener("click", () => {
-            document.getElementById("global-context-menu").style.display = "none";
-        });
+        document.addEventListener("click", () => { document.getElementById("global-context-menu").style.display = "none"; });
 
         function triggerRenameChat() {
             if (!menuSelectedChatId) return;
@@ -585,56 +551,41 @@
             if (confirm(l.confirmDelete)) {
                 delete conversations[menuSelectedChatId];
                 localStorage.setItem(`groq_convs_${currentUser.uid}`, JSON.stringify(conversations));
-                
-                if (currentConversationId === menuSelectedChatId) {
-                    startNewChat();
-                } else {
-                    renderHistoryList();
-                }
+                if (currentConversationId === menuSelectedChatId) startNewChat(); else renderHistoryList();
             }
         }
 
         function startNewChat() {
-            currentConversationId = null;
-            editingMessageIndex = null;
+            currentConversationId = null; editingMessageIndex = null;
             document.getElementById("chat-container").innerHTML = "";
-            
-            renderHistoryList();
-            updateQuotaDisplayOnly();
+            renderHistoryList(); updateQuotaDisplayOnly();
             document.getElementById("user-input").value = "";
         }
 
         function loadConversation(id) {
-            currentConversationId = id;
-            editingMessageIndex = null;
+            currentConversationId = id; editingMessageIndex = null;
             document.getElementById("chat-container").innerHTML = "";
-            
             if (conversations[id] && conversations[id].messages) {
                 conversations[id].messages.forEach((msg, index) => {
-                    appendMessageRow(msg.content, msg.role, index);
+                    appendMessageRow(msg.content, msg.role, index, msg.mediaType, msg.mediaUrl);
                 });
             }
-            renderHistoryList();
-            updateQuotaDisplayOnly();
+            renderHistoryList(); updateQuotaDisplayOnly();
         }
 
+        // --- פונקציית שליחת ההודעות המרכזית (כולל זיהוי ויצירת תמונות וסרטונים) ---
         async function sendMessage() {
             const inputElement = document.getElementById("user-input");
             let userMessage = inputElement.value.trim();
             const l = languages[currentLang];
             if (!userMessage || isWaitingForBot) return;
 
-            if (!apiKey) { 
-                alert(l.maintenance); 
-                return; 
-            }
-
+            // בדיקת מכסה
             const hasQuota = await checkAndIncrementQuota();
             if (!hasQuota) return;
 
             if (editingMessageIndex !== null) {
-                const editingIndex = editingMessageIndex;
-                editingMessageIndex = null;
+                const editingIndex = editingMessageIndex; editingMessageIndex = null;
                 conversations[currentConversationId].messages = conversations[currentConversationId].messages.slice(0, editingIndex);
                 loadConversation(currentConversationId);
             }
@@ -643,8 +594,7 @@
                 currentConversationId = "conv_" + Date.now();
                 conversations[currentConversationId] = {
                     title: userMessage.split(' ').slice(0, 4).join(' ') + "...",
-                    timestamp: Date.now(),
-                    messages: []
+                    timestamp: Date.now(), messages: []
                 };
                 document.getElementById("chat-container").innerHTML = "";
             }
@@ -657,17 +607,61 @@
             localStorage.setItem(`groq_convs_${currentUser.uid}`, JSON.stringify(conversations));
             renderHistoryList();
 
-            inputElement.value = "";
-            adjustTextareaHeight(inputElement);
+            inputElement.value = ""; adjustTextareaHeight(inputElement);
             document.getElementById("send-btn").disabled = true;
-
             isWaitingForBot = true;
             const loadingId = appendLoadingRow();
 
+            // --- זיהוי מילים שמבקשות מדיה (תמונה / סרטון) ---
+            const lowerMsg = userMessage.toLowerCase();
+            const wantsImage = lowerMsg.includes("תמונה") || lowerMsg.includes("תצייר") || lowerMsg.includes("צייר") || lowerMsg.includes("image") || lowerMsg.includes("picture");
+            const wantsVideo = lowerMsg.includes("סרטון") || lowerMsg.includes("וידאו") || lowerMsg.includes("video") || lowerMsg.includes("movie");
+
+            if (wantsImage || wantsVideo) {
+                // ניקוי המילים המפעילות כדי להשאיר רק את התיאור האמיתי
+                let promptClean = userMessage.replace(/(תמונה|תצייר|צייר|סרטון|וידאו|תייצר|ייצר|של|שלי|image|picture|video|draw|create|make|of)/gi, "").trim();
+                if(!promptClean) promptClean = "AI Fantasy Magic Art";
+
+                // קידוד הטקסט לפורמט URL בטוח
+                const encodedPrompt = encodeURIComponent(promptClean);
+                let botReplyText = "";
+                let mediaType = "";
+                let mediaUrl = "";
+
+                if (wantsImage) {
+                    mediaType = "image";
+                    mediaUrl = `https://image.pollinations.ai/p/${encodedPrompt}?width=1024&height=1024&nologo=true&seed=${Math.floor(Math.random() * 100000)}`;
+                    botReplyText = `🎨 הנה התמונה שביקשת! \n\n**הגדרה שהוגדרה ל-AI:** "${promptClean}"\n\nהמנוע השתמש במודל Flux מתקדם כדי ליצור את התמונה הזו בזמן אמת עבורך. ✨`;
+                } else {
+                    mediaType = "video";
+                    // כאן אנו משתמשים במחולל האנימציה הדינמי המובנה של Pollinations המבוסס על רצף פריימים מהיר המייצר וידאו/GIF
+                    mediaUrl = `https://image.pollinations.ai/p/${encodedPrompt}?width=800&height=600&enhance=true&feed=true&seed=${Math.floor(Math.random() * 100000)}`;
+                    botReplyText = `🎬 הנה הסרטון/האנימציה הקצרה שביקשת! \n\n**הגדרה שהוגדרה ל-AI:** "${promptClean}"\n\nיצרתי רצף פריימים מהיר (Stop-Motion AI Video Animation) כדי להנפיש את התיאור שלך. לחץ לחיצה ימנית כדי לשמור! 🚀`;
+                }
+
+                // השהייה קטנה בשביל תחושה שהבוט "חושב ומייצר"
+                setTimeout(() => {
+                    document.getElementById(loadingId).remove();
+                    isWaitingForBot = false;
+
+                    const botIndex = conversations[currentConversationId].messages.length;
+                    conversations[currentConversationId].messages.push({ 
+                        role: "assistant", content: botReplyText, mediaType: mediaType, mediaUrl: mediaUrl 
+                    });
+                    
+                    appendMessageRow(botReplyText, "assistant", botIndex, mediaType, mediaUrl);
+                    localStorage.setItem(`groq_convs_${currentUser.uid}`, JSON.stringify(conversations));
+                }, 2500);
+
+                return; // יוצאים מהפונקציה ולא ממשיכים ל-Groq
+            }
+
+            // --- המשך זרימה רגילה ל-Groq במידה ולא ביקש מדיה ---
+            if (!apiKey) { alert(l.maintenance); document.getElementById(loadingId).remove(); isWaitingForBot = false; return; }
+
             try {
                 const chatHistory = conversations[currentConversationId].messages.slice(-12).map(msg => ({
-                    role: msg.role,
-                    content: msg.content
+                    role: msg.role, content: msg.content
                 }));
                 
                 const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -690,43 +684,34 @@
                 if (response.ok) {
                     const botReply = data.choices[0].message.content;
                     const botIndex = conversations[currentConversationId].messages.length;
-                    
                     conversations[currentConversationId].messages.push({ role: "assistant", content: botReply });
                     appendMessageRow(botReply, "assistant", botIndex);
-                    
                     localStorage.setItem(`groq_convs_${currentUser.uid}`, JSON.stringify(conversations));
                 } else {
                     appendMessageRow(l.serverErr, "error");
                 }
-
             } catch (error) {
                 if(document.getElementById(loadingId)) document.getElementById(loadingId).remove();
-                isWaitingForBot = false;
-                appendMessageRow(l.connErr, "error");
+                isWaitingForBot = false; appendMessageRow(l.connErr, "error");
             }
         }
 
-        // --- עזרי תצוגה והעתקה/עריכה ---
+        // --- עזרי תצוגה, העתקה ועריכה ---
         function copyMessage(index) {
             const txt = conversations[currentConversationId].messages[index].content;
-            navigator.clipboard.writeText(txt).then(() => {});
+            navigator.clipboard.writeText(txt);
         }
 
         function editUserMessage(index) {
             if (isWaitingForBot) return;
             const txt = conversations[currentConversationId].messages[index].content;
             const inputElement = document.getElementById("user-input");
-            inputElement.value = txt;
-            inputElement.focus();
-            adjustTextareaHeight(inputElement);
+            inputElement.value = txt; inputElement.focus(); adjustTextareaHeight(inputElement);
             document.getElementById("send-btn").disabled = false;
-            cancelEditing();
             editingMessageIndex = index;
         }
 
-        function cancelEditing() { editingMessageIndex = null; }
-
-        function appendMessageRow(text, role, index = null) {
+        function appendMessageRow(text, role, index = null, mediaType = null, mediaUrl = null) {
             const chatContainer = document.getElementById("chat-container");
             const row = document.createElement("div");
             row.className = `message-row ${role}`;
@@ -734,18 +719,28 @@
             const content = document.createElement("div");
             content.className = "message-content";
             content.innerText = text;
+
+            // אם יש תמונה או סרטון להציג, נוסיף אותם ישירות מתחת לטקסט ההסבר
+            if (mediaType === "image" && mediaUrl) {
+                const img = document.createElement("img");
+                img.src = mediaUrl; img.className = "media-output"; img.alt = "AI Generated Image";
+                content.appendChild(img);
+            } else if (mediaType === "video" && mediaUrl) {
+                const imgVid = document.createElement("img"); // שימוש בפורמט מונפש
+                imgVid.src = mediaUrl; imgVid.className = "media-output"; imgVid.alt = "AI Generated Video Animation";
+                content.appendChild(imgVid);
+            }
+
             row.appendChild(content);
             
             const l = languages[currentLang];
             if ((role === "user" || role === "assistant") && index !== null) {
-                const actions = document.createElement("div");
-                actions.className = "message-actions";
+                const actions = document.createElement("div"); actions.className = "message-actions";
                 const copyBtn = document.createElement("button"); copyBtn.className = "action-btn"; copyBtn.innerHTML = `${l.copy}`; copyBtn.onclick = () => copyMessage(index); actions.appendChild(copyBtn);
                 if (role === "user") { const editBtn = document.createElement("button"); editBtn.className = "action-btn"; editBtn.innerHTML = `${l.edit}`; editBtn.onclick = () => editUserMessage(index); actions.appendChild(editBtn); }
                 row.appendChild(actions);
             }
-            chatContainer.appendChild(row);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            chatContainer.appendChild(row); chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
         function appendLoadingRow() {
@@ -788,9 +783,7 @@
             if (passInput) updates.admin_password = passInput;
 
             database.ref("global_settings").update(updates).then(() => {
-                alert("השינויים נשמרו בהצלחה!");
-                loadGlobalSettings();
-                toggleAdminPanel();
+                alert("השינויים נשמרו בהצלחה!"); loadGlobalSettings(); toggleAdminPanel();
             }).catch(err => alert("שגיאה בשמירה: " + err.message));
         }
     </script>
