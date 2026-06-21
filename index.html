@@ -1,94 +1,192 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="he" dir="rtl" id="html-tag">
 <head>
     <meta charset="UTF-8">
-    <title>SmartBot Final Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartBot 🚀</title>
+    <!-- טעינת ספריות Firebase הרשמיות -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
-        body { margin: 0; display: flex; height: 100vh; background: #1a1a1a; color: white; font-family: sans-serif; }
-        #sidebar { width: 250px; background: #111; padding: 20px; border-left: 1px solid #333; }
-        #chat-main { flex: 1; display: flex; flex-direction: column; }
-        #chat-container { flex: 1; overflow-y: auto; padding: 20px; }
-        .row { padding: 15px; border-bottom: 1px solid #333; position: relative; }
-        .actions { display: inline-flex; gap: 10px; margin-right: 10px; opacity: 0.5; }
-        #input-zone { padding: 20px; background: #212121; display: flex; gap: 10px; }
-        textarea { flex: 1; background: #40414f; border: none; padding: 10px; color: white; border-radius: 5px; resize: none; }
-        button { padding: 10px 20px; background: #4caf50; border: none; color: white; cursor: pointer; }
+        :root {
+            --bg-color: #1a1a1a;
+            --chat-bg: #212121;
+            --sidebar-bg: #171717;
+            --text-color: #ececec;
+            --user-msg: #2f303d;
+            --bot-msg: #212121;
+            --accent-color: #4caf50;
+            --btn-hover: #3e3f4b;
+            --icon-color: #acacbe;
+            --error-color: #ff4a4a;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden; }
+
+        #auth-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: var(--bg-color); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .auth-container { background-color: var(--chat-bg); padding: 40px; border-radius: 15px; box-shadow: 0 0 25px rgba(0,0,0,0.5); width: 100%; max-width: 400px; text-align: center; box-sizing: border-box; }
+        .auth-container h2 { margin-top: 0; color: var(--accent-color); margin-bottom: 25px; }
+        .auth-input { width: 100%; padding: 12px; margin-bottom: 15px; background: #333; border: 1px solid #555; color: white; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+        .auth-btn { width: 100%; padding: 12px; background-color: var(--accent-color); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; }
+        .auth-toggle { margin-top: 20px; font-size: 0.9rem; color: #aaa; cursor: pointer; }
+        .auth-toggle span { color: var(--accent-color); text-decoration: underline; }
+        .forgot-password-link { display: block; margin-top: 12px; font-size: 0.85rem; color: #888; cursor: pointer; text-decoration: none; }
+
+        #app-layout { display: none; width: 100%; height: 100%; }
+        #sidebar { width: 260px; background-color: var(--sidebar-bg); padding: 15px 10px; display: flex; flex-direction: column; border-left: 1px solid #333; }
+        #new-chat-btn { background-color: transparent; color: white; border: 1px solid #444; border-radius: 5px; padding: 12px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        #history-list { flex: 1; overflow-y: auto; }
+        .history-item-wrapper { position: relative; display: flex; align-items: center; border-radius: 5px; padding: 10px; cursor: pointer; }
+        .history-item-wrapper:hover { background-color: var(--btn-hover); }
+        .history-menu-btn { position: absolute; left: 8px; background: transparent; border: none; color: white; display: none; cursor: pointer; }
+        .history-item-wrapper:hover .history-menu-btn { display: block; }
+        
+        #main-chat { flex: 1; display: flex; flex-direction: column; background-color: var(--chat-bg); position: relative; }
+        header { padding: 15px; text-align: center; font-weight: bold; border-bottom: 1px solid #333; }
+        #chat-container { flex: 1; overflow-y: auto; padding-bottom: 120px; }
+        .message-row { display: flex; padding: 20px 25px; gap: 15px; border-bottom: 1px solid #333; flex-wrap: wrap; }
+        .message-row.user { background-color: var(--user-msg); }
+        .media-output { max-width: 100%; width: 400px; border-radius: 10px; margin-top: 10px; display: block; }
+        
+        #input-container { padding: 20px; position: absolute; bottom: 0; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; }
+        #input-wrapper { width: 85%; max-width: 800px; background-color: #40414f; border-radius: 12px; display: flex; align-items: center; padding: 8px 15px; }
+        textarea { flex: 1; background: transparent; border: none; color: white; font-size: 1rem; outline: none; resize: none; }
+        #send-btn { background: transparent; border: none; color: var(--icon-color); cursor: pointer; font-size: 1.5rem; }
+        #quota-error-text { color: var(--error-color); font-weight: bold; display: none; }
+
+        #admin-panel { display: none; position: fixed; top: 0; width: 320px; height: 100vh; background-color: #222; padding: 25px; z-index: 10000; border-left: 2px solid #444; }
+        .admin-btn { width: 100%; background-color: var(--accent-color); color: white; padding: 10px; border: none; cursor: pointer; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-<div id="sidebar">
-    <h3 ondblclick="showAdmin()">SmartBot 🚀</h3>
-    <div id="history"></div>
-    <button onclick="location.reload()">שיחה חדשה</button>
-</div>
-
-<div id="chat-main">
-    <div id="chat-container"></div>
-    <div id="input-zone">
-        <textarea id="user-input" rows="1"></textarea>
-        <button onclick="handleSend()">שלח</button>
+    <div id="auth-screen">
+        <div class="auth-container">
+            <h2 id="auth-title">התחברות ל-SmartBot</h2>
+            <input type="email" id="auth-email" class="auth-input" placeholder="אימייל">
+            <input type="password" id="auth-password" class="auth-input" placeholder="סיסמה">
+            <button id="auth-submit-btn" class="auth-btn" onclick="handleAuth()">התחבר</button>
+            <div id="auth-toggle" class="auth-toggle" onclick="toggleAuthMode()">אין לך חשבון? <span>להרשמה</span></div>
+        </div>
     </div>
-</div>
 
-<script>
-    // --- 1. הגדרות בסיס ---
-    const firebaseConfig = { /* הכנס נתונים מ-Firebase כאן */ };
-    firebase.initializeApp(firebaseConfig);
-    let GROQ_API_KEY = "הכנס_כאן_את_המפתח_שלך";
+    <div id="app-layout">
+        <div id="sidebar">
+            <button id="new-chat-btn" onclick="startNewChat()">שיחה חדשה <span>+</span></button>
+            <div id="history-list"></div>
+            <div id="user-profile-info">
+                <span id="user-email-display"></span>
+                <span class="logout-link" onclick="logout()" style="cursor:pointer; color:red;">התנתק</span>
+            </div>
+        </div>
 
-    // --- 2. פונקציית שליחה חכמה (טקסט + מדיה) ---
-    async function handleSend() {
-        const input = document.getElementById("user-input");
-        const text = input.value.trim();
-        if(!text) return;
-        
-        appendRow(text, "user");
-        input.value = "";
+        <div id="main-chat">
+            <header id="header-title">SmartBot 🚀</header>
+            <div id="chat-container"></div>
+            <div id="input-container">
+                <div id="input-wrapper">
+                    <textarea id="user-input" placeholder="שלח הודעה..." rows="1"></textarea>
+                    <button id="send-btn" onclick="sendMessage()">➤</button>
+                </div>
+                <div id="quota-error-text">❌ עברת את המכסה היומית (30 הודעות)!</div>
+            </div>
+        </div>
+    </div>
 
-        const isMusic = /מוזיקה|שיר|תלחין/.test(text);
-        const isVideo = /סרטון|וידאו|סרט/.test(text);
-        const isImage = /תמונה|צייר|תצייר|תיצור/.test(text);
+    <script>
+        // הגדרות Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDQtHryOx81CBL3xUtfo7iaR8_KSLULLy8",
+            authDomain: "smartbot-c308f.firebaseapp.com",
+            databaseURL: "https://smartbot-c308f-default-rtdb.firebaseio.com",
+            projectId: "smartbot-c308f",
+            storageBucket: "smartbot-c308f.firebasestorage.app",
+            messagingSenderId: "42431479541",
+            appId: "1:42431479541:web:0d2d31ea2819d3aa100fbc"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
 
-        if (isMusic || isVideo || isImage) {
-            const prompt = text.replace(/(תמונה|צייר|תצייר|תיצור|סרטון|וידאו|סרט|מוזיקה|שיר|תלחין|לי|את)/gi, "").trim();
-            const enc = encodeURIComponent(prompt || "abstract");
-            const url = isMusic ? `https://pollinations.ai/music/${enc}` : 
-                        isVideo ? `https://image.pollinations.ai/p/${enc}?model=turbo` : 
-                        `https://image.pollinations.ai/p/${enc}?nologo=true`;
+        let currentUser = null;
+        let apiKey = "gsk_Vl9e6cZc8pY09k9k8k8k8k8k8k8k8k8k8k8k8k8k8k8k8k8k"; // הוסף כאן את ה-Key שלך
+        let currentConversationId = null;
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                document.getElementById("auth-screen").style.display = "none";
+                document.getElementById("app-layout").style.display = "flex";
+            } else {
+                document.getElementById("auth-screen").style.display = "flex";
+                document.getElementById("app-layout").style.display = "none";
+            }
+        });
+
+        async function sendMessage() {
+            const input = document.getElementById("user-input");
+            const userMessage = input.value.trim();
+            if (!userMessage) return;
+
+            // --- לוגיקת מדיה חדשה ---
+            const lowerMsg = userMessage.toLowerCase();
+            const isMusic = lowerMsg.includes("מוזיקה") || lowerMsg.includes("שיר") || lowerMsg.includes("תלחין");
+            const isVideo = lowerMsg.includes("וידאו") || lowerMsg.includes("סרטון") || lowerMsg.includes("סרט");
+            const isImage = lowerMsg.includes("תמונה") || lowerMsg.includes("צייר") || lowerMsg.includes("תיצור") || lowerMsg.includes("תצייר");
+
+            if (isMusic || isVideo || isImage) {
+                const cleanPrompt = userMessage.replace(/(מוזיקה|שיר|תלחין|וידאו|סרטון|סרט|תמונה|צייר|תיצור|תצייר|לי|תעשה)/gi, "").trim();
+                const enc = encodeURIComponent(cleanPrompt || "art");
+                let mediaType = isMusic ? "music" : (isVideo ? "video" : "image");
+                let mediaUrl = isMusic ? `https://pollinations.ai/music/${enc}` : 
+                               isVideo ? `https://image.pollinations.ai/p/${enc}?model=turbo&seed=${Date.now()}` : 
+                               `https://image.pollinations.ai/p/${enc}?width=1024&height=1024&nologo=true`;
+                
+                appendMessageRow(userMessage, "user");
+                appendMessageRow(`הנה ה-${mediaType} עבורך: "${cleanPrompt}"`, "assistant", mediaType, mediaUrl);
+                input.value = "";
+                return;
+            }
+
+            // --- לוגיקה רגילה ל-Groq ---
+            appendMessageRow(userMessage, "user");
+            input.value = "";
             
-            appendRow(`מייצר עבורך...`, "bot", isMusic ? "music" : (isVideo ? "video" : "image"), url);
-        } else {
-            const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                method: "POST",
-                headers: {"Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json"},
-                body: JSON.stringify({model: "llama-3.3-70b-versatile", messages: [{role: "user", content: text}]})
-            });
-            const data = await res.json();
-            appendRow(data.choices[0].message.content, "bot");
+            try {
+                const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                    method: "POST",
+                    headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{ role: "user", content: userMessage }] })
+                });
+                const data = await res.json();
+                appendMessageRow(data.choices[0].message.content, "assistant");
+            } catch (e) {
+                appendMessageRow("שגיאה בחיבור לשרת.", "assistant");
+            }
         }
-    }
 
-    // --- 3. פונקציית תצוגה ועריכה ---
-    function appendRow(text, role, type=null, url=null) {
-        const chat = document.getElementById("chat-container");
-        const div = document.createElement("div");
-        div.className = `row ${role}`;
-        div.innerHTML = `<div>${text}</div>` + 
-            (role === 'user' ? `<div class="actions"><span onclick="edit(this)">📝</span><span onclick="this.parentElement.parentElement.remove()">🗑️</span></div>` : '');
-        
-        if(type === "image" || type === "video") div.innerHTML += `<img src="${url}" style="max-width:300px; display:block; margin-top:10px;">`;
-        if(type === "music") div.innerHTML += `<audio controls src="${url}" style="margin-top:10px;"></audio>`;
-        
-        chat.appendChild(div);
-        chat.scrollTop = chat.scrollHeight;
-    }
+        function appendMessageRow(text, role, mediaType = null, mediaUrl = null) {
+            const chat = document.getElementById("chat-container");
+            const div = document.createElement("div");
+            div.className = `message-row ${role}`;
+            let html = `<div class="message-content">${text}</div>`;
+            
+            if (mediaType === "image" || mediaType === "video") {
+                html += `<img src="${mediaUrl}" class="media-output">`;
+            } else if (mediaType === "music") {
+                html += `<audio controls src="${mediaUrl}" style="margin-top:15px; display:block;"></audio>`;
+            }
+            
+            div.innerHTML = html;
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+        }
 
-    function edit(el) { document.getElementById("user-input").value = el.parentElement.parentElement.innerText.replace('📝🗑️', ''); }
-    function showAdmin() { GROQ_API_KEY = prompt("הכנס API Key חדש:", GROQ_API_KEY); }
-</script>
+        function handleAuth() { /* כאן נכנס הקוד שלך ל-Auth */ }
+        function toggleAuthMode() { /* כאן נכנס הקוד שלך ל-Toggle */ }
+        function logout() { auth.signOut(); }
+        function startNewChat() { document.getElementById("chat-container").innerHTML = ""; }
+    </script>
 </body>
 </html>
