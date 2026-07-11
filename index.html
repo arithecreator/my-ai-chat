@@ -1,288 +1,259 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl" id="html-tag">
+<html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartBot 🚀</title>
-    <!-- טעינת ספריות Firebase הרשמיות של גוגל -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <title>משחק הסיפוקים הוויראלי - ASMR</title>
     <style>
-        :root {
-            --bg-color: #1a1a1a;
-            --chat-bg: #212121;
-            --sidebar-bg: #171717;
-            --text-color: #ececec;
-            --user-msg: #2f303d;
-            --bot-msg: #212121;
-            --accent-color: #4caf50;
-            --btn-hover: #3e3f4b;
-            --icon-color: #acacbe;
-            --error-color: #ff4a4a;
-        }
-
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
             margin: 0;
             padding: 0;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        /* מסך כניסה והרשמה מעוצב */
-        #auth-screen {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background-color: var(--bg-color);
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .auth-container {
-            background-color: var(--chat-bg);
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 0 25px rgba(0,0,0,0.5);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-            box-sizing: border-box;
-        }
-
-        .auth-container h2 { margin-top: 0; color: var(--accent-color); margin-bottom: 25px; }
-        .auth-input { width: 100%; padding: 12px; margin-bottom: 15px; background: #333; border: 1px solid #555; color: white; border-radius: 8px; box-sizing: border-box; font-size: 1rem; text-align: inherit; }
-        .auth-btn { width: 100%; padding: 12px; background-color: var(--accent-color); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 5px; }
-        .auth-btn:hover { background-color: #45a049; }
-        .auth-toggle { margin-top: 20px; font-size: 0.9rem; color: #aaa; cursor: pointer; }
-        .auth-toggle span { color: var(--accent-color); text-decoration: underline; }
-        
-        /* כפתור שכחתי סיסמה */
-        .forgot-password-link { display: block; margin-top: 12px; font-size: 0.85rem; color: #888; cursor: pointer; text-decoration: none; }
-        .forgot-password-link:hover { color: white; text-decoration: underline; }
-
-        /* ממשק הצ'אט הראשי */
-        #app-layout { display: none; width: 100%; height: 100%; }
-
-        #sidebar {
-            width: 260px;
-            background-color: var(--sidebar-bg);
-            padding: 15px 10px;
+            background: linear-gradient(135deg, #0f172a, #1e1b4b);
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             flex-direction: column;
-            border-left: 1px solid #333;
-            border-right: 1px solid #333;
-            box-sizing: border-box;
-        }
-
-        #new-chat-btn {
-            background-color: transparent;
-            color: white;
-            border: 1px solid #444;
-            border-radius: 5px;
-            padding: 12px;
-            cursor: pointer;
-            font-weight: bold;
-            display: flex;
             align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
+            justify-content: center;
+            min-height: 100vh;
+            overflow-x: hidden;
         }
-        #new-chat-btn:hover { background-color: var(--btn-hover); }
 
-        #history-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; position: relative; }
-        
-        .history-item-wrapper { position: relative; display: flex; align-items: center; border-radius: 5px; }
-        .history-item-wrapper:hover { background-color: var(--btn-hover); }
-        
-        .history-item { flex: 1; padding: 10px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.9rem; color: #ccc; text-align: inherit; }
-        html[dir="rtl"] .history-item { padding-left: 30px; }
-        html[dir="ltr"] .history-item { padding-right: 30px; }
-        
-        .history-item-wrapper.active { background-color: var(--btn-hover); }
-        .history-item-wrapper.active .history-item { color: white; font-weight: bold; }
-        
-        .history-menu-btn { position: absolute; background: transparent; border: none; color: var(--icon-color); cursor: pointer; font-size: 1.1rem; display: none; padding: 2px 6px; border-radius: 4px; }
-        html[dir="rtl"] .history-menu-btn { left: 8px; }
-        html[dir="ltr"] .history-menu-btn { right: 8px; }
-        
-        .history-item-wrapper:hover .history-menu-btn { display: block; }
-        .history-menu-btn:hover { color: white; background-color: #555; }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+            text-align: center;
+            color: #38bdf8;
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
 
-        /* תפריט אפשרויות צף ל-3 נקודות */
-        .context-menu { display: none; position: absolute; background-color: #2c2c2c; border: 1px solid #444; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 1000; width: 140px; overflow: hidden; }
-        .context-menu button { width: 100%; background: transparent; border: none; color: white; padding: 10px; cursor: pointer; font-size: 0.85rem; display: block; }
-        html[dir="rtl"] .context-menu button { text-align: right; }
-        html[dir="ltr"] .context-menu button { text-align: left; }
-        .context-menu button:hover { background-color: var(--accent-color); }
+        p {
+            font-size: 1rem;
+            color: #94a3b8;
+            margin-bottom: 30px;
+            text-align: center;
+        }
 
-        #user-profile-info { padding: 10px; border-top: 1px solid #333; font-size: 0.85rem; color: #aaa; display: flex; justify-content: space-between; align-items: center; }
-        .logout-link { color: var(--error-color); cursor: pointer; text-decoration: underline; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            max-width: 400px;
+            width: 90%;
+            padding: 10px;
+        }
 
-        #main-chat { flex: 1; display: flex; flex-direction: column; background-color: var(--chat-bg); position: relative; }
-        header { background-color: var(--chat-bg); padding: 15px; text-align: center; font-size: 1.3rem; font-weight: bold; border-bottom: 1px solid #333; cursor: pointer; user-select: none; }
+        .satisfying-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 35px 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #fff;
+            cursor: pointer;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3), inset 0 4px 4px rgba(255,255,255,0.05);
+            transition: all 0.1s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-        #chat-container { flex: 1; overflow-y: auto; padding-bottom: 120px; }
-        .message-row { display: flex; padding: 20px 25px; gap: 15px; width: 100%; box-sizing: border-box; border-bottom: 1px solid #333; position: relative; }
-        .message-row.user { background-color: var(--user-msg); }
-        .message-row.assistant { background-color: var(--bot-msg); }
-        
-        .message-content { flex: 1; line-height: 1.6; word-wrap: break-word; white-space: pre-wrap; padding: 0 5px; text-align: inherit; }
+        /* עיצוב ייחודי לכל כפתור */
+        .btn-keyboard { border-color: #38bdf8; text-shadow: 0 0 5px #38bdf8; }
+        .btn-popit { border-color: #f43f5e; text-shadow: 0 0 5px #f43f5e; }
+        .btn-bubble { border-color: #22c55e; text-shadow: 0 0 5px #22c55e; }
+        .btn-switch { border-color: #eab308; text-shadow: 0 0 5px #eab308; }
+        .btn-zipper { border-color: #a855f7; text-shadow: 0 0 5px #a855f7; }
+        .btn-sand { border-color: #ec4899; text-shadow: 0 0 5px #ec4899; }
 
-        /* עיצוב מותאם למדיה שמוצגת בצ'אט */
-        .media-output { max-width: 100%; width: 480px; border-radius: 10px; margin-top: 15px; display: block; box-shadow: 0 4px 15px rgba(0,0,0,0.4); border: 1px solid #444; }
+        /* אפקט לחיצה מספק */
+        .satisfying-btn:active {
+            transform: scale(0.92);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            background: rgba(255, 255, 255, 0.15);
+        }
 
-        .message-actions { display: none; position: absolute; bottom: 5px; gap: 8px; background-color: rgba(33, 33, 33, 0.9); padding: 4px 8px; border-radius: 5px; border: 1px solid #444; }
-        html[dir="rtl"] .message-actions { left: 15px; }
-        html[dir="ltr"] .message-actions { right: 15px; }
-        .message-row:hover .message-actions { display: flex; }
-        .action-btn { background: transparent; border: none; color: var(--icon-color); cursor: pointer; padding: 2px; font-size: 0.9rem; }
-        .action-btn:hover { color: white; }
-
-        /* מונה מכסה אישית על המסך */
-        #limit-banner { background-color: #2a2213; color: #ffb74d; text-align: center; padding: 8px; font-size: 0.9rem; border-bottom: 1px solid #ffb74d33; display: none; }
-
-        .dots-loader { display: flex; gap: 6px; align-items: center; padding: 10px 0; }
-        .dots-loader span { width: 8px; height: 8px; background-color: var(--accent-color); border-radius: 50%; display: inline-block; animation: dots-flash 1.2s infinite ease-in-out both; }
-        .dots-loader span:nth-child(1) { animation-delay: -0.36s; }
-        .dots-loader span:nth-child(2) { animation-delay: -0.24s; }
-        .dots-loader span:nth-child(3) { animation-delay: -0.12s; }
-        .dots-loader span:nth-child(4) { animation-delay: 0s; }
-        @keyframes dots-flash { 0%, 80%, 100% { transform: scale(0.3); opacity: 0.3; } 40% { transform: scale(1.1); opacity: 1; } }
-
-        #input-container { background: linear-gradient(transparent, var(--chat-bg)); padding: 20px; position: absolute; bottom: 0; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 5px; }
-        #input-wrapper { width: 85%; max-width: 800px; background-color: #40414f; border-radius: 12px; box-shadow: 0 0 15px rgba(0,0,0,0.4); display: flex; align-items: center; padding: 8px 15px; gap: 10px; }
-        textarea { flex: 1; padding: 5px; border: none; background-color: transparent; color: white; font-size: 1rem; outline: none; resize: none; max-height: 120px; font-family: inherit; text-align: inherit; }
-        #send-btn { background-color: transparent; color: var(--icon-color); border: none; cursor: pointer; font-size: 1.2rem; transform: scaleX(1); }
-        html[dir="rtl"] #send-btn { transform: scaleX(-1); }
-        #send-btn:hover:not(:disabled) { color: var(--accent-color); }
-        #send-btn:disabled { opacity: 0.2; cursor: not-allowed; }
-        #quota-error-text { color: var(--error-color); font-size: 0.85rem; font-weight: bold; display: none; }
-
-        #admin-panel { display: none; position: fixed; top: 0; width: 320px; height: 100vh; background-color: #222; padding: 25px; box-sizing: border-box; z-index: 10000; border-left: 2px solid #444; border-right: 2px solid #444; }
-        html[dir="rtl"] #admin-panel { right: 260px; }
-        html[dir="ltr"] #admin-panel { left: 260px; }
-        #admin-panel h3 { margin-top: 0; border-bottom: 2px solid #444; padding-bottom: 10px; color: var(--accent-color); }
-        .admin-group { margin-bottom: 20px; }
-        .admin-group label { display: block; margin-bottom: 8px; font-size: 0.9rem; color: #ccc; }
-        #admin-panel input { width: 100%; border-radius: 8px; padding: 10px; background-color: #333; border: 1px solid #555; color: white; box-sizing: border-box; }
-        .admin-btn { width: 100%; background-color: var(--accent-color); border-radius: 8px; margin-top: 5px; color: white; font-weight: bold; padding: 10px; border: none; cursor: pointer;}
-        #close-admin { background-color: #555 !important; margin-top: 15px; }
+        .emoji {
+            font-size: 2.5rem;
+        }
     </style>
 </head>
 <body>
 
-    <!-- מסך כניסה / הרשמה -->
-    <div id="auth-screen">
-        <div class="auth-container">
-            <h2 id="auth-title">התחברות ל-SmartBot</h2>
-            <input type="email" id="auth-email" class="auth-input" placeholder="כתובת אימייל">
-            <input type="password" id="auth-password" class="auth-input" placeholder="סיסמה (לפחות 6 תווים)">
-            <button id="auth-submit-btn" class="auth-btn" onclick="handleAuth()">התחבר</button>
-            <div class="forgot-password-link" id="auth-forgot-btn" onclick="handleForgotPassword()">שכחת את הסיסמה?</div>
-            <div id="auth-toggle" class="auth-toggle" onclick="toggleAuthMode()">אין לך חשבון? <span id="auth-toggle-text">להרשמה מהירה</span></div>
-        </div>
-    </div>
+    <h1>קליק מספק 🎧</h1>
+    <p>שים אוזניות בשביל החוויה הכי טובה!</p>
 
-    <!-- תפריט 3 נקודות צף גלובלי -->
-    <div id="global-context-menu" class="context-menu">
-        <button id="menu-rename-btn" onclick="triggerRenameChat()">✏️ שנה שם</button>
-        <button id="menu-delete-btn" onclick="triggerDeleteChat()" style="color: var(--error-color);">🗑️ מחק שיחה</button>
-    </div>
-
-    <!-- המבנה הראשי של האפליקציה -->
-    <div id="app-layout">
-        <div id="sidebar">
-            <button id="new-chat-btn" onclick="startNewChat()"><span id="lbl-new-chat">שיחה חדשה</span> <span>+</span></button>
-            <div id="history-list"></div>
-            <div id="user-profile-info">
-                <span id="user-email-display">---</span>
-                <span id="lbl-logout" class="logout-link" onclick="logout()">התנתק</span>
-            </div>
-        </div>
-
-        <div id="main-chat">
-            <div id="limit-banner"><span id="lbl-quota-text">הודעות שנוצלו היום:</span> <span id="quota-used-banner">0</span> מתוך 30</div>
-            <header id="header-title" title="SmartBot">SmartBot 🚀</header>
-            <div id="chat-container"></div>
-            <div id="input-container">
-                <div id="input-wrapper">
-                    <textarea id="user-input" placeholder="שלח הודעה ל-SmartBot..." rows="1" oninput="adjustTextareaHeight(this)" onkeypress="handleKeyPress(event)"></textarea>
-                    <button id="send-btn" onclick="sendMessage()">&#10148;</button>
-                </div>
-                <div id="quota-error-text">❌ עברת את המכסה היומית שלך (30 הודעות)! המערכת תתאפס מחר. ⏳</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- פאנל ניהול סודי -->
-    <div id="admin-panel">
-        <h3>🔑 הגדרות ניהול SmartBot</h3>
-        <div class="admin-group"><label>מפתח Groq API:</label><input type="text" id="api-key-input" placeholder="gsk_..."></div>
-        <div class="admin-group"><label>שם האתר:</label><input type="text" id="site-name-input"></div>
-        <div class="admin-group"><label>סיסמת אדמין:</label><input type="password" id="admin-pass-input"></div>
-        <button class="admin-btn" onclick="saveAdminSettings()">שמור שינויים</button>
-        <button id="close-admin" class="admin-btn" onclick="toggleAdminPanel()">סגור</button>
+    <div class="grid">
+        <button class="satisfying-btn btn-keyboard" onclick="playSound('keyboard')">
+            <span class="emoji">⌨️</span>
+            <span>מקלדת מכנית</span>
+        </button>
+        <button class="satisfying-btn btn-popit" onclick="playSound('popit')">
+            <span class="emoji">🔴</span>
+            <span>פופ-איט בועה</span>
+        </button>
+        <button class="satisfying-btn btn-bubble" onclick="playSound('bubble')">
+            <span class="emoji">🧼</span>
+            <span>פצפצים</span>
+        </button>
+        <button class="satisfying-btn btn-switch" onclick="playSound('switch')">
+            <span class="emoji">💡</span>
+            <span>מתג אור</span>
+        </button>
+        <button class="satisfying-btn btn-zipper" onclick="playSound('zipper')">
+            <span class="emoji">🤐</span>
+            <span>ריצ'רצ' מהיר</span>
+        </button>
+        <button class="satisfying-btn btn-sand" onclick="playSound('sand')">
+            <span class="emoji">⏳</span>
+            <span>חיתוך חול</span>
+        </button>
     </div>
 
     <script>
-        // --- (הוסף כאן את כל הלוגיקה שלך - Firebase, Auth, ופונקציות ה-Chat שהיו לך) ---
-        // הנה הוספת לוגיקת המדיה לתוך ה-sendMessage שלך:
+        // יצירת סביבת האודיו של הדפדפן
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        async function sendMessage() {
-            const inputElement = document.getElementById("user-input");
-            let userMessage = inputElement.value.trim();
-            if (!userMessage) return;
+        function playSound(type) {
+            // הפעלה מחדש של האודיו אם הדפדפן חסם אותו בהתחלה
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
 
-            // בדיקת מילות מפתח למדיה
-            const lowerMsg = userMessage.toLowerCase();
-            const isMusic = lowerMsg.includes("מוזיקה") || lowerMsg.includes("שיר") || lowerMsg.includes("תלחין");
-            const isVideo = lowerMsg.includes("סרטון") || lowerMsg.includes("וידאו") || lowerMsg.includes("סרט");
-            const isImage = lowerMsg.includes("תמונה") || lowerMsg.includes("צייר") || lowerMsg.includes("תצייר") || lowerMsg.includes("תיצור");
+            const now = audioCtx.currentTime;
 
-            if (isMusic || isVideo || isImage) {
-                // לוגיקת המדיה
-                const cleanPrompt = userMessage.replace(/(מוזיקה|שיר|תלחין|סרטון|וידאו|סרט|תמונה|צייר|תצייר|תיצור|לי|את|בשביל)/gi, "").trim();
-                const enc = encodeURIComponent(cleanPrompt || "creative");
-                let mediaType = isMusic ? "music" : (isVideo ? "video" : "image");
-                let mediaUrl = isMusic ? `https://pollinations.ai/music/${enc}` : 
-                               isVideo ? `https://image.pollinations.ai/p/${enc}?model=turbo` : 
-                               `https://image.pollinations.ai/p/${enc}?nologo=true`;
+            if (type === 'keyboard') {
+                // סאונד של קליק מכני עמוק (פלסטיק פוגש מתכת)
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
                 
-                appendMessageRow(userMessage, "user");
-                appendMessageRow(`הנה ה-${mediaType} שיצרתי עבורך: "${cleanPrompt}"`, "assistant", null, mediaType, mediaUrl);
-                inputElement.value = "";
-                return;
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(120, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 0.08);
+                
+                gain.gain.setValueAtTime(0.8, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.08);
+
+                // הוספת רעש קל "מתכתי" לקליק
+                let osc2 = audioCtx.createOscillator();
+                let gain2 = audioCtx.createGain();
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(800, now);
+                gain2.gain.setValueAtTime(0.1, now);
+                gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.02);
+                osc2.connect(gain2);
+                gain2.connect(audioCtx.destination);
+                osc2.start(now);
+                osc2.stop(now + 0.02);
+            } 
+            
+            else if (type === 'popit') {
+                // סאונד "פופ" חלול של גומי/סיליקון
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(150, now + 0.06);
+                
+                gain.gain.setValueAtTime(0.6, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.06);
+            } 
+            
+            else if (type === 'bubble') {
+                // סאונד פיצוץ ניילון בועות (גבוה וחד)
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(900, now);
+                osc.frequency.exponentialRampToValueAtTime(300, now + 0.03);
+                
+                gain.gain.setValueAtTime(0.5, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.03);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.03);
+            } 
+            
+            else if (type === 'switch') {
+                // קליק כפול מהיר של מתג חשמלי קשיח
+                [0, 0.02].forEach(delay => {
+                    let osc = audioCtx.createOscillator();
+                    let gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime( delay === 0 ? 250 : 180, now + delay);
+                    gain.gain.setValueAtTime(0.4, now + delay);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + delay + 0.03);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + delay);
+                    osc.stop(now + delay + 0.03);
+                });
+            } 
+            
+            else if (type === 'zipper') {
+                // סאונד של פתיחת רוכסן מהירה (הרבה קליקים קטנים וצפופים)
+                for (let i = 0; i < 15; i++) {
+                    let delay = i * 0.012;
+                    let osc = audioCtx.createOscillator();
+                    let gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(400 + (i * 20), now + delay);
+                    gain.gain.setValueAtTime(0.15, now + delay);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + delay + 0.01);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + delay);
+                    osc.stop(now + delay + 0.01);
+                }
+            } 
+            
+            else if (type === 'sand') {
+                // סאונד של "קראנץ'" חיתוך חול קינטי (רעש לבן גרוס קצר)
+                let bufferSize = audioCtx.sampleRate * 0.08; // 0.08 שניות
+                let buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                let data = buffer.getChannelData(0);
+                
+                // יצירת רעש אקראי
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                
+                let noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+                
+                let filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(400, now);
+                
+                let gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                noise.start(now);
+                noise.stop(now + 0.08);
             }
-
-            // ... (פה ממשיך הקוד הרגיל שלך של ה-API ל-Groq) ...
         }
-
-        // פונקציית העזר לעיצוב השורה בצ'אט (כולל תמיכה במדיה)
-        function appendMessageRow(text, role, index = null, mediaType = null, mediaUrl = null) {
-            const chat = document.getElementById("chat-container");
-            const div = document.createElement("div");
-            div.className = `message-row ${role}`;
-            
-            let html = `<div class="message-content">${text}</div>`;
-            
-            if (mediaType === "image" || mediaType === "video") {
-                html += `<img src="${mediaUrl}" class="media-output">`;
-            } else if (mediaType === "music") {
-                html += `<audio controls src="${mediaUrl}" style="margin-top:15px; display:block;"></audio>`;
-            }
-            
-            div.innerHTML = html;
-            chat.appendChild(div);
-            chat.scrollTop = chat.scrollHeight;
-        }
-
-        // ... (שאר הקוד שלך - Auth, Firebase וכו') ...
     </script>
 </body>
 </html>
