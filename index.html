@@ -219,93 +219,16 @@
             </div>
         </div>
     </div>
-// --- הגדרות בסיס ---
-let apiKey = localStorage.getItem('groq_api_key') || "";
-let currentSystemInstruction = localStorage.getItem('bot_instruction') || "You are a helpful AI assistant.";
 
-// --- פונקציית העדכון (Admin) ---
-function openAdminPanel() {
-    const pass = prompt("הכנס סיסמת מנהל:");
-    if (pass === "1234") { 
-        const action = prompt("בחר פעולה: \n1 - עדכון API Key \n2 - הגדר התנהגות (System Prompt)");
-        if (action === "1") {
-            apiKey = prompt("עדכן API Key:", apiKey);
-            localStorage.setItem('groq_api_key', apiKey);
-        } else if (action === "2") {
-            currentSystemInstruction = prompt("כתוב לבוט את ההנחיה החדשה שלו:", currentSystemInstruction);
-            localStorage.setItem('bot_instruction', currentSystemInstruction);
-            alert("ההתנהגות עודכנה בהצלחה!");
-        }
-    }
-}
-
-// --- פונקציית שליחת הודעה משודרגת ---
-async function sendMessage() {
-    const input = document.getElementById("user-input");
-    const userMessage = input.value.trim();
-    if (!userMessage) return;
-
-    appendMessageRow(userMessage, "user");
-    input.value = "";
-
-    // בדיקת מדיה (מה שדיברנו קודם)
-    const msg = userMessage.toLowerCase();
-    if (msg.includes("תמונה") || msg.includes("וידאו") || msg.includes("מוזיקה")) {
-        handleMediaRequest(userMessage);
-        return;
-    }
-
-    // שליחה ל-Groq עם ה-System Instruction החדש
-    try {
-        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: { 
-                "Authorization": `Bearer ${apiKey}`, 
-                "Content-Type": "application/json" 
-            },
-            body: JSON.stringify({
-                model: "llama-3.3-70b-versatile",
-                messages: [
-                    { role: "system", content: currentSystemInstruction },
-                    { role: "user", content: userMessage }
-                ],
-                temperature: 0.7
-            })
-        });
-        const data = await response.json();
-        appendMessageRow(data.choices[0].message.content, "assistant");
-    } catch (e) {
-        appendMessageRow("שגיאה: וודא שה-API Key תקין.", "assistant");
-    }
-}
-
-// --- פונקציית עזר למדיה ---
-function handleMediaRequest(text) {
-    const prompt = encodeURIComponent(text);
-    const seed = Math.floor(Math.random() * 1000000);
-    const isMusic = text.includes("מוזיקה");
-    const isVideo = text.includes("וידאו");
-    const url = isMusic ? `https://pollinations.ai/p/${prompt}?model=music&seed=${seed}` : 
-                `https://image.pollinations.ai/p/${prompt}?width=800&height=600&seed=${seed}`;
-    const type = isMusic ? "music" : (isVideo ? "video" : "image");
-    
-    appendMessageRow("המדיה שלך מוכנה:", "assistant", type, url);
-}
-
-// --- פונקציית תצוגה ---
-function appendMessageRow(text, role, type=null, url=null) {
-    const container = document.getElementById("chat-container");
-    const row = document.createElement("div");
-    row.className = `message-row ${role}`;
-    let html = `<div>${text}</div>`;
-    if(type === 'image') html += `<img src="${url}" class="media-output">`;
-    else if(type === 'video') html += `<video src="${url}" class="media-output" controls></video>`;
-    else if(type === 'music') html += `<audio src="${url}" class="audio-player" controls></audio>`;
-    row.innerHTML = html;
-    container.appendChild(row);
-    container.scrollTop = container.scrollHeight;
-}
-
+    <!-- פאנל ניהול סודי -->
+    <div id="admin-panel">
+        <h3>🔑 הגדרות ניהול SmartBot</h3>
+        <div class="admin-group"><label>מפתח Groq API:</label><input type="text" id="api-key-input" placeholder="gsk_..."></div>
+        <div class="admin-group"><label>שם האתר:</label><input type="text" id="site-name-input"></div>
+        <div class="admin-group"><label>סיסמת אדמין:</label><input type="password" id="admin-pass-input"></div>
+        <button class="admin-btn" onclick="saveAdminSettings()">שמור שינויים</button>
+        <button id="close-admin" class="admin-btn" onclick="toggleAdminPanel()">סגור</button>
+    </div>
 
     <script>
         // === הגדרות קונפיגורציה של FIREBASE ===
