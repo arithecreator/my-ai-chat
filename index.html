@@ -1,123 +1,906 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="he" dir="rtl" id="html-tag">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>עולם הסיפוקים - ASMR Simulator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartBot 🚀</title>
+    <!-- טעינת ספריות Firebase הרשמיות של גוגל -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
         :root {
-            --bg-color: #0f172a;
-            --text-color: #fff;
+            --bg-color: #1a1a1a;
+            --chat-bg: #212121;
+            --sidebar-bg: #171717;
+            --text-color: #ececec;
+            --user-msg: #2f303d;
+            --bot-msg: #212121;
+            --accent-color: #4caf50;
+            --btn-hover: #3e3f4b;
+            --icon-color: #acacbe;
+            --error-color: #ff4a4a;
         }
-        
+
         body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             margin: 0;
             padding: 0;
-            background: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            min-height: 100vh;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* מסך כניסה והרשמה מעוצב */
+        #auth-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: var(--bg-color);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .auth-container {
+            background-color: var(--chat-bg);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 0 25px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .auth-container h2 { margin-top: 0; color: var(--accent-color); margin-bottom: 25px; }
+        .auth-input { width: 100%; padding: 12px; margin-bottom: 15px; background: #333; border: 1px solid #555; color: white; border-radius: 8px; box-sizing: border-box; font-size: 1rem; text-align: inherit; }
+        .auth-btn { width: 100%; padding: 12px; background-color: var(--accent-color); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 5px; }
+        .auth-btn:hover { background-color: #45a049; }
+        .auth-toggle { margin-top: 20px; font-size: 0.9rem; color: #aaa; cursor: pointer; }
+        .auth-toggle span { color: var(--accent-color); text-decoration: underline; }
+        
+        /* כפתור שכחתי סיסמה */
+        .forgot-password-link { display: block; margin-top: 12px; font-size: 0.85rem; color: #888; cursor: pointer; text-decoration: none; }
+        .forgot-password-link:hover { color: white; text-decoration: underline; }
+
+        /* ממשק הצ'אט הראשי */
+        #app-layout { display: none; width: 100%; height: 100%; }
+
+        #sidebar {
+            width: 260px;
+            background-color: var(--sidebar-bg);
+            padding: 15px 10px;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            user-select: none;
-            -webkit-user-select: none;
-            transition: background 0.1s ease;
+            border-left: 1px solid #333;
+            border-right: 1px solid #333;
+            box-sizing: border-box;
         }
 
-        /* כותרת קבועה */
-        .main-header {
-            text-align: center;
-            margin: 20px 0 10px 0;
-        }
-        .main-header h1 { margin: 0; color: #38bdf8; font-size: 1.8rem; }
-        .main-header p { margin: 5px 0 0 0; color: #94a3b8; font-size: 0.9rem; }
-
-        /* ניהול מסכים */
-        .screen { display: none; width: 100%; max-width: 450px; flex-direction: column; align-items: center; padding: 15px; box-sizing: border-box; }
-        .screen.active { display: flex; }
-
-        .back-btn {
-            align-self: flex-start;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
+        #new-chat-btn {
+            background-color: transparent;
             color: white;
-            padding: 10px 18px;
-            border-radius: 12px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            padding: 12px;
             cursor: pointer;
             font-weight: bold;
-            margin-bottom: 25px;
-            font-size: 1rem;
-        }
-
-        /* --- 1. תפריט ראשי --- */
-        .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; width: 100%; margin-top: 10px; }
-        .menu-btn {
-            background: rgba(255, 255, 255, 0.03);
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 35px 10px;
-            color: white;
-            font-size: 1.1rem;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            transition: transform 0.1s, background 0.1s;
             display: flex;
-            flex-direction: column;
             align-items: center;
-            gap: 12px;
+            justify-content: space-between;
+            margin-bottom: 20px;
         }
-        .menu-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
-        .menu-btn span.emoji { font-size: 2.5rem; }
+        #new-chat-btn:hover { background-color: var(--btn-hover); }
 
-        /* --- 2. מסך מקלדת מכנית --- */
-        .kb-preview { width: 100%; background: #0f172a; border: 2px solid #334155; padding: 12px; border-radius: 8px; margin-bottom: 15px; color: #38bdf8; font-family: monospace; font-size: 1.2rem; min-height: 24px; word-break: break-all; text-align: left; box-sizing: border-box; }
-        .keyboard-box { background: #1e293b; padding: 12px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: 100%; display: flex; flex-direction: column; gap: 8px; box-sizing: border-box; }
-        .kb-row { display: flex; justify-content: center; gap: 6px; width: 100%; }
-        .key {
-            background: #334155;
-            border-bottom: 4px solid #1e293b;
-            border-radius: 6px;
-            color: white;
-            padding: 15px 0;
-            flex: 1;
-            text-align: center;
-            font-weight: bold;
-            font-size: 1rem;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            touch-action: manipulation;
+        #history-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; position: relative; }
+        
+        .history-item-wrapper { position: relative; display: flex; align-items: center; border-radius: 5px; }
+        .history-item-wrapper:hover { background-color: var(--btn-hover); }
+        
+        .history-item { flex: 1; padding: 10px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.9rem; color: #ccc; text-align: inherit; }
+        html[dir="rtl"] .history-item { padding-left: 30px; }
+        html[dir="ltr"] .history-item { padding-right: 30px; }
+        
+        .history-item-wrapper.active { background-color: var(--btn-hover); }
+        .history-item-wrapper.active .history-item { color: white; font-weight: bold; }
+        
+        .history-menu-btn { position: absolute; background: transparent; border: none; color: var(--icon-color); cursor: pointer; font-size: 1.1rem; display: none; padding: 2px 6px; border-radius: 4px; }
+        html[dir="rtl"] .history-menu-btn { left: 8px; }
+        html[dir="ltr"] .history-menu-btn { right: 8px; }
+        
+        .history-item-wrapper:hover .history-menu-btn { display: block; }
+        .history-menu-btn:hover { color: white; background-color: #555; }
+
+        /* תפריט אפשרויות צף ל-3 נקודות */
+        .context-menu { display: none; position: absolute; background-color: #2c2c2c; border: 1px solid #444; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 1000; width: 140px; overflow: hidden; }
+        .context-menu button { width: 100%; background: transparent; border: none; color: white; padding: 10px; cursor: pointer; font-size: 0.85rem; display: block; }
+        html[dir="rtl"] .context-menu button { text-align: right; }
+        html[dir="ltr"] .context-menu button { text-align: left; }
+        .context-menu button:hover { background-color: var(--accent-color); }
+
+        #user-profile-info { padding: 10px; border-top: 1px solid #333; font-size: 0.85rem; color: #aaa; display: flex; justify-content: space-between; align-items: center; }
+        .logout-link { color: var(--error-color); cursor: pointer; text-decoration: underline; }
+
+        #main-chat { flex: 1; display: flex; flex-direction: column; background-color: var(--chat-bg); position: relative; }
+        header { background-color: var(--chat-bg); padding: 15px; text-align: center; font-size: 1.3rem; font-weight: bold; border-bottom: 1px solid #333; cursor: pointer; user-select: none; }
+
+        #chat-container { flex: 1; overflow-y: auto; padding-bottom: 120px; }
+        .message-row { display: flex; padding: 20px 25px; gap: 15px; width: 100%; box-sizing: border-box; border-bottom: 1px solid #333; position: relative; }
+        .message-row.user { background-color: var(--user-msg); }
+        .message-row.assistant { background-color: var(--bot-msg); }
+        
+        .message-content { flex: 1; line-height: 1.6; word-wrap: break-word; white-space: pre-wrap; padding: 0 5px; text-align: inherit; }
+
+        /* עיצוב מותאם למדיה שמוצגת בצ'אט */
+        .media-output { max-width: 100%; width: 480px; border-radius: 10px; margin-top: 15px; display: block; box-shadow: 0 4px 15px rgba(0,0,0,0.4); border: 1px solid #444; }
+
+        .message-actions { display: none; position: absolute; bottom: 5px; gap: 8px; background-color: rgba(33, 33, 33, 0.9); padding: 4px 8px; border-radius: 5px; border: 1px solid #444; }
+        html[dir="rtl"] .message-actions { left: 15px; }
+        html[dir="ltr"] .message-actions { right: 15px; }
+        .message-row:hover .message-actions { display: flex; }
+        .action-btn { background: transparent; border: none; color: var(--icon-color); cursor: pointer; padding: 2px; font-size: 0.9rem; }
+        .action-btn:hover { color: white; }
+
+        /* מונה מכסה אישית על המסך */
+        #limit-banner { background-color: #2a2213; color: #ffb74d; text-align: center; padding: 8px; font-size: 0.9rem; border-bottom: 1px solid #ffb74d33; display: none; }
+
+        .dots-loader { display: flex; gap: 6px; align-items: center; padding: 10px 0; }
+        .dots-loader span { width: 8px; height: 8px; background-color: var(--accent-color); border-radius: 50%; display: inline-block; animation: dots-flash 1.2s infinite ease-in-out both; }
+        .dots-loader span:nth-child(1) { animation-delay: -0.36s; }
+        .dots-loader span:nth-child(2) { animation-delay: -0.24s; }
+        .dots-loader span:nth-child(3) { animation-delay: -0.12s; }
+        .dots-loader span:nth-child(4) { animation-delay: 0s; }
+        @keyframes dots-flash { 0%, 80%, 100% { transform: scale(0.3); opacity: 0.3; } 40% { transform: scale(1.1); opacity: 1; } }
+
+        #input-container { background-color: linear-gradient(transparent, var(--chat-bg)); padding: 20px; position: absolute; bottom: 0; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        #input-wrapper { width: 85%; max-width: 800px; background-color: #40414f; border-radius: 12px; box-shadow: 0 0 15px rgba(0,0,0,0.4); display: flex; align-items: center; padding: 8px 15px; gap: 10px; }
+        textarea { flex: 1; padding: 5px; border: none; background-color: transparent; color: white; font-size: 1rem; outline: none; resize: none; max-height: 120px; font-family: inherit; text-align: inherit; }
+        #send-btn { background-color: transparent; color: var(--icon-color); border: none; cursor: pointer; font-size: 1.2rem; transform: scaleX(1); }
+        html[dir="rtl"] #send-btn { transform: scaleX(-1); }
+        #send-btn:hover:not(:disabled) { color: var(--accent-color); }
+        #send-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+        #quota-error-text { color: var(--error-color); font-size: 0.85rem; font-weight: bold; display: none; }
+
+        #admin-panel { display: none; position: fixed; top: 0; width: 320px; height: 100vh; background-color: #222; padding: 25px; box-sizing: border-box; z-index: 10000; border-left: 2px solid #444; border-right: 2px solid #444; }
+        html[dir="rtl"] #admin-panel { right: 260px; }
+        html[dir="ltr"] #admin-panel { left: 260px; }
+        #admin-panel h3 { margin-top: 0; border-bottom: 2px solid #444; padding-bottom: 10px; color: var(--accent-color); }
+        .admin-group { margin-bottom: 20px; }
+        .admin-group label { display: block; margin-bottom: 8px; font-size: 0.9rem; color: #ccc; }
+        #admin-panel input { width: 100%; border-radius: 8px; padding: 10px; background-color: #333; border: 1px solid #555; color: white; box-sizing: border-box; }
+        .admin-btn { width: 100%; background-color: var(--accent-color); border-radius: 8px; margin-top: 5px; color: white; font-weight: bold; padding: 10px; border: none; cursor: pointer;}
+        #close-admin { background-color: #555 !important; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+    <!-- מסך כניסה / הרשמה -->
+    <div id="auth-screen">
+        <div class="auth-container">
+            <h2 id="auth-title">התחברות ל-SmartBot</h2>
+            <input type="email" id="auth-email" class="auth-input" placeholder="כתובת אימייל">
+            <input type="password" id="auth-password" class="auth-input" placeholder="סיסמה (לפחות 6 תווים)">
+            <button id="auth-submit-btn" class="auth-btn" onclick="handleAuth()">התחבר</button>
+            <div class="forgot-password-link" id="auth-forgot-btn" onclick="handleForgotPassword()">שכחת את הסיסמה?</div>
+            <div id="auth-toggle" class="auth-toggle" onclick="toggleAuthMode()">אין לך חשבון? <span id="auth-toggle-text">להרשמה מהירה</span></div>
+        </div>
+    </div>
+
+    <!-- תפריט 3 נקודות צף גלובלי -->
+    <div id="global-context-menu" class="context-menu">
+        <button id="menu-rename-btn" onclick="triggerRenameChat()">✏️ שנה שם</button>
+        <button id="menu-delete-btn" onclick="triggerDeleteChat()" style="color: var(--error-color);">🗑️ מחק שיחה</button>
+    </div>
+
+    <!-- המבנה הראשי של האפליקציה -->
+    <div id="app-layout">
+        <div id="sidebar">
+            <button id="new-chat-btn" onclick="startNewChat()"><span id="lbl-new-chat">שיחה חדשה</span> <span>+</span></button>
+            <div id="history-list"></div>
+            <div id="user-profile-info">
+                <span id="user-email-display">---</span>
+                <span id="lbl-logout" class="logout-link" onclick="logout()">התנתק</span>
+            </div>
+        </div>
+
+        <div id="main-chat">
+            <div id="limit-banner"><span id="lbl-quota-text">הודעות שנוצלו היום:</span> <span id="quota-used-banner">0</span> מתוך 30</div>
+            <header id="header-title" title="SmartBot">SmartBot 🚀</header>
+            <div id="chat-container"></div>
+            <div id="input-container">
+                <div id="input-wrapper">
+                    <textarea id="user-input" placeholder="שלח הודעה ל-SmartBot..." rows="1" oninput="adjustTextareaHeight(this)" onkeypress="handleKeyPress(event)"></textarea>
+                    <button id="send-btn" onclick="sendMessage()">&#10148;</button>
+                </div>
+                <div id="quota-error-text">❌ עברת את המכסה היומית שלך (30 הודעות)! המערכת תתאפס מחר. ⏳</div>
+            </div>
+        </div>
+    </div>
+// --- הגדרות בסיס ---
+let apiKey = localStorage.getItem('groq_api_key') || "";
+let currentSystemInstruction = localStorage.getItem('bot_instruction') || "You are a helpful AI assistant.";
+
+// --- פונקציית העדכון (Admin) ---
+function openAdminPanel() {
+    const pass = prompt("הכנס סיסמת מנהל:");
+    if (pass === "1234") { 
+        const action = prompt("בחר פעולה: \n1 - עדכון API Key \n2 - הגדר התנהגות (System Prompt)");
+        if (action === "1") {
+            apiKey = prompt("עדכן API Key:", apiKey);
+            localStorage.setItem('groq_api_key', apiKey);
+        } else if (action === "2") {
+            currentSystemInstruction = prompt("כתוב לבוט את ההנחיה החדשה שלו:", currentSystemInstruction);
+            localStorage.setItem('bot_instruction', currentSystemInstruction);
+            alert("ההתנהגות עודכנה בהצלחה!");
         }
-        .key:active { transform: translateY(3px); border-bottom-width: 1px; background: #475569; }
-        .key.space { flex: 4; background: #475569; border-bottom-color: #334155; }
-        .key.backspace { flex: 1.5; background: #94a3b8; color: #0f172a; }
+    }
+}
 
-        /* --- 3. מסך פופ איט --- */
-        .popit-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; background: linear-gradient(145deg, #e11d48, #c084fc); padding: 20px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
-        .pop-button {
-            width: 60px;
-            height: 60px;
-            background: radial-gradient(circle at 30% 30%, #f43f5e, #be123c);
-            border-radius: 50%;
-            box-shadow: 0 5px 0 #9f1239, inset 2px 2px 5px rgba(255,255,255,0.4);
-            cursor: pointer;
-            transition: all 0.05s ease;
-            touch-action: manipulation;
+// --- פונקציית שליחת הודעה משודרגת ---
+async function sendMessage() {
+    const input = document.getElementById("user-input");
+    const userMessage = input.value.trim();
+    if (!userMessage) return;
+
+    appendMessageRow(userMessage, "user");
+    input.value = "";
+
+    // בדיקת מדיה (מה שדיברנו קודם)
+    const msg = userMessage.toLowerCase();
+    if (msg.includes("תמונה") || msg.includes("וידאו") || msg.includes("מוזיקה")) {
+        handleMediaRequest(userMessage);
+        return;
+    }
+
+    // שליחה ל-Groq עם ה-System Instruction החדש
+    try {
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: { 
+                "Authorization": `Bearer ${apiKey}`, 
+                "Content-Type": "application/json" 
+            },
+            body: JSON.stringify({
+                model: "llama-3.3-70b-versatile",
+                messages: [
+                    { role: "system", content: currentSystemInstruction },
+                    { role: "user", content: userMessage }
+                ],
+                temperature: 0.7
+            })
+        });
+        const data = await response.json();
+        appendMessageRow(data.choices[0].message.content, "assistant");
+    } catch (e) {
+        appendMessageRow("שגיאה: וודא שה-API Key תקין.", "assistant");
+    }
+}
+
+// --- פונקציית עזר למדיה ---
+function handleMediaRequest(text) {
+    const prompt = encodeURIComponent(text);
+    const seed = Math.floor(Math.random() * 1000000);
+    const isMusic = text.includes("מוזיקה");
+    const isVideo = text.includes("וידאו");
+    const url = isMusic ? `https://pollinations.ai/p/${prompt}?model=music&seed=${seed}` : 
+                `https://image.pollinations.ai/p/${prompt}?width=800&height=600&seed=${seed}`;
+    const type = isMusic ? "music" : (isVideo ? "video" : "image");
+    
+    appendMessageRow("המדיה שלך מוכנה:", "assistant", type, url);
+}
+
+// --- פונקציית תצוגה ---
+function appendMessageRow(text, role, type=null, url=null) {
+    const container = document.getElementById("chat-container");
+    const row = document.createElement("div");
+    row.className = `message-row ${role}`;
+    let html = `<div>${text}</div>`;
+    if(type === 'image') html += `<img src="${url}" class="media-output">`;
+    else if(type === 'video') html += `<video src="${url}" class="media-output" controls></video>`;
+    else if(type === 'music') html += `<audio src="${url}" class="audio-player" controls></audio>`;
+    row.innerHTML = html;
+    container.appendChild(row);
+    container.scrollTop = container.scrollHeight;
+}
+
+
+    <script>
+        // === הגדרות קונפיגורציה של FIREBASE ===
+        const firebaseConfig = {
+          apiKey: "AIzaSyDQtHryOx81CBL3xUtfo7iaR8_KSLULLy8",
+          authDomain: "smartbot-c308f.firebaseapp.com",
+          databaseURL: "https://smartbot-c308f-default-rtdb.firebaseio.com",
+          projectId: "smartbot-c308f",
+          storageBucket: "smartbot-c308f.firebasestorage.app",
+          messagingSenderId: "42431479541",
+          appId: "1:42431479541:web:0d2d31ea2819d3aa100fbc"
+        };
+
+        // אתחול Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // מילון שפות אוטומטי לממשק האתר
+        const languages = {
+            he: {
+                dir: "rtl",
+                loginTitle: "התחברות ל-SmartBot", signupTitle: "הרשמה ל-SmartBot",
+                emailPlaceholder: "כתובת אימייל", passwordPlaceholder: "סיסמה (לפחות 6 תווים)",
+                loginBtn: "התחבר", signupBtn: "הרשם כעת",
+                noAccount: "אין לך חשבון? ", quickSignup: "להרשמה מהירה",
+                hasAccount: "כבר יש לך חשבון? ", quickLogin: "להתחברות מהירה",
+                forgotPassword: "שכחת את הסיסמה?", inputPlaceholder: "שלח הודעה ל-SmartBot...",
+                newChat: "שיחה חדשה", logout: "התנתק", quotaText: "הודעות שנוצלו היום:",
+                quotaErr: "❌ עברת את המכסה היומית שלך (30 הודעות)! המערכת תתאפס מחר. ⏳",
+                maintenance: "המערכת נמצאת כעת בתחזוקה זמנית. אנא נסה שוב מאוחר יותר.",
+                rename: "✏️ שנה שם", deleteChat: "🗑️ מחק שיחה", copy: "📋 העתק", edit: "📝 ערוך",
+                promptPrompt: "הכנס שם חדש לשיחה:", confirmDelete: "האם אתה בטוח שברצונך למחוק את השיחה הזו לצמיתות?",
+                serverErr: "❌ תקלה בשרת, אנא נסה שוב מאוחר יותר.", connErr: "❌ תקלה בתקשורת.",
+                gmailOnlyErr: "שגיאה: ניתן להירשם אך ורק עם חשבון גוגל אמיתי המסתיים ב-@gmail.com!",
+                forgotSuccess: "שלחנו לך כעת אימייל מאובטח לאיפוס הסיסמה. בדוק את תיבת הדואר שלך!",
+                forgotAlertEmail: "אנא הזן את כתובת ה-Gmail שלך בשדה למעלה כדי לקבל לינק לאיפוס."
+            },
+            en: {
+                dir: "ltr",
+                loginTitle: "Login to SmartBot", signupTitle: "Sign Up for SmartBot",
+                emailPlaceholder: "Email Address", passwordPlaceholder: "Password (Min 6 chars)",
+                loginBtn: "Login", signupBtn: "Sign Up",
+                noAccount: "Don't have an account? ", quickSignup: "Sign up fast",
+                hasAccount: "Already have an account? ", quickLogin: "Login fast",
+                forgotPassword: "Forgot password?", inputPlaceholder: "Send a message to SmartBot...",
+                newChat: "New Chat", logout: "Logout", quotaText: "Messages used today:",
+                quotaErr: "❌ You have exceeded your daily quota (30 messages)! Resets tomorrow. ⏳",
+                maintenance: "The system is currently undergoing maintenance. Please try again later.",
+                rename: "✏️ Rename", deleteChat: "🗑️ Delete Chat", copy: "📋 Copy", edit: "📝 Edit",
+                promptPrompt: "Enter new conversation name:", confirmDelete: "Are you sure you want to permanently delete this chat?",
+                serverErr: "❌ Server error, please try again later.", connErr: "❌ Connection error.",
+                gmailOnlyErr: "Error: You can only register using a valid Google account ending with @gmail.com!",
+                forgotSuccess: "A password reset link has been sent to your email. Check your inbox!",
+                forgotAlertEmail: "Please enter your Gmail address in the field above first."
+            }
+        };
+
+        // זיהוי אוטומטי של שפת הדפדפן
+        let userLang = navigator.language || navigator.userLanguage;
+        let currentLang = "en"; 
+        if (userLang.startsWith("he")) currentLang = "he";
+
+        // הפעלת לוקליזציה לשפה הנבחרת
+        function applyLanguageStrings() {
+            const l = languages[currentLang];
+            document.getElementById("html-tag").setAttribute("dir", l.dir);
+            document.getElementById("html-tag").setAttribute("lang", currentLang);
+            
+            document.getElementById("auth-email").placeholder = l.emailPlaceholder;
+            document.getElementById("auth-password").placeholder = l.passwordPlaceholder;
+            document.getElementById("auth-forgot-btn").innerText = l.forgotPassword;
+            updateAuthDOM();
+
+            document.getElementById("lbl-new-chat").innerText = l.newChat;
+            document.getElementById("lbl-logout").innerText = l.logout;
+            document.getElementById("lbl-quota-text").innerText = l.quotaText;
+            document.getElementById("quota-error-text").innerText = l.quotaErr;
+            document.getElementById("user-input").placeholder = l.inputPlaceholder;
+            document.getElementById("menu-rename-btn").innerText = l.rename;
+            document.getElementById("menu-delete-btn").innerText = l.deleteChat;
         }
-        .pop-button.popped {
-            background: radial-gradient(circle at 50% 50%, #be123c, #9f1239);
-            box-shadow: inset 0 4px 6px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.1);
-            transform: scale(0.95) translateY(4px);
+
+        // משתנים גלובליים
+        let apiKey = "";
+        let siteName = "SmartBot 🚀";
+        let adminPassword = "1234";
+        let currentUser = null;
+        let currentConversationId = null;
+        let isWaitingForBot = false;
+        let editingMessageIndex = null;
+        let isSignUpMode = false;
+        let dailyLimit = 30;
+        let menuSelectedChatId = null;
+
+        applyLanguageStrings();
+
+        // האזנה למצב המשתמש
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                document.getElementById("auth-screen").style.display = "none";
+                document.getElementById("app-layout").style.display = "flex";
+                document.getElementById("user-email-display").innerText = user.email.split('@')[0];
+                
+                loadGlobalSettings().then(() => {
+                    initUserChatSystem();
+                });
+            } else {
+                currentUser = null;
+                document.getElementById("auth-screen").style.display = "flex";
+                document.getElementById("app-layout").style.display = "none";
+            }
+        });
+
+        // --- ניהול כניסה והרשמה ---
+        function updateAuthDOM() {
+            const l = languages[currentLang];
+            const toggleElement = document.getElementById("auth-toggle");
+            if(!toggleElement) return;
+
+            if (isSignUpMode) {
+                document.getElementById("auth-title").innerText = l.signupTitle;
+                document.getElementById("auth-submit-btn").innerText = l.signupBtn;
+                toggleElement.innerHTML = `${l.hasAccount} <span id="auth-toggle-text">${l.quickLogin}</span>`;
+            } else {
+                document.getElementById("auth-title").innerText = l.loginTitle;
+                document.getElementById("auth-submit-btn").innerText = l.loginBtn;
+                toggleElement.innerHTML = `${l.noAccount} <span id="auth-toggle-text">${l.quickSignup}</span>`;
+            }
         }
-        .reset-btn { margin-top: 25px; background: #22c55e; border: none; padding: 12px 24px; color: white; border-radius: 12px; font-weight: bold; font-size: 1rem; cursor: pointer; }
 
-        /* --- 4. מסך מתג אור --- */
-        .switch-area { display: flex; justify-content: center; align-items: center; height: 250px; width: 100%; }
-        .wall-switch { width: 110px; height: 180px; background: #f1f5f9; border-radius: 14px; border: 4px solid #cbd5e1; position: relative; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.4); }
-        .switch-toggle { width: 76px; height: 80px; background: #ffffff; position: absolute; left: 13px; border-radius: 8px; box-shadow: 0 6px 0 #cbd5e1, 0 5px 10px rgba(0,0,0,0.15); transition: all 0.1s ease; }
-        .wall-switch.on .switch-toggle { top: 15px; box-shadow: 0 6px 0 #e2e8f0; border-bottom: 2px solid #cbd5e1; }
-        .wall-switch.off .switch-toggle { bottom: 15px; box-shadow: 0 -6px 0 #94a3b8; border-top: 2px solid #cbd5e1; }
+        function toggleAuthMode() {
+            isSignUpMode = !isSignUpMode;
+            updateAuthDOM();
+        }
 
-        /* --- 5. מסך ריצ'רצ' קפוצ'ון --- */
-        .zipper-track { width: 40px; height: 350px; background: #334155; position: relative; border-radius: 6px; border-left: 4px dashed #1e293b; border-right: 4
+        function handleAuth() {
+            const email = document.getElementById("auth-email").value.trim();
+            const password = document.getElementById("auth-password").value.trim();
+            const l = languages[currentLang];
+
+            if(!email || !password) {
+                alert("נא למלא את כל השדות!");
+                return;
+            }
+            if(password.length < 6) {
+                alert("הסיסמה חייבת להיות לפחות 6 תווים!");
+                return;
+            }
+            if (!email.toLowerCase().endsWith("@gmail.com")) {
+                alert(l.gmailOnlyErr);
+                return;
+            }
+
+            if (isSignUpMode) {
+                auth.createUserWithEmailAndPassword(email, password)
+                    .then(() => alert("נרשמת בהצלחה!"))
+                    .catch(err => alert("שגיאת הרשמה: " + err.message));
+            } else {
+                auth.signInWithEmailAndPassword(email, password)
+                    .then(() => alert("התחברת בהצלחה!"))
+                    .catch(err => alert("שגיאת התחברות: " + err.message));
+            }
+        }
+
+        function handleForgotPassword() {
+            const email = document.getElementById("auth-email").value.trim();
+            const l = languages[currentLang];
+            if (!email) { alert(l.forgotAlertEmail); return; }
+            auth.sendPasswordResetEmail(email).then(() => alert(l.forgotSuccess)).catch(err => alert(err.message));
+        }
+
+        function logout() { auth.signOut(); }
+
+        async function loadGlobalSettings() {
+            const snapshot = await database.ref("global_settings").once("value");
+            const data = snapshot.val() || {};
+            apiKey = data.api_key || "";
+            siteName = data.site_name || "SmartBot 🚀";
+            adminPassword = data.admin_password || "1234";
+            document.getElementById("header-title").innerText = siteName;
+            document.title = siteName;
+        }
+
+        function getTodayKey() {
+            const d = new Date();
+            return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+        }
+
+        async function checkAndIncrementQuota() {
+            if (!currentUser) return false;
+            const uid = currentUser.uid;
+            const today = getTodayKey();
+            const quotaRef = database.ref(`users_quota/${uid}/${today}`);
+            const snapshot = await quotaRef.once("value");
+            let count = snapshot.val() || 0;
+
+            document.getElementById("limit-banner").style.display = "block";
+            document.getElementById("quota-used-banner").innerText = count;
+
+            if (count >= dailyLimit) { lockInputForQuota(true); return false; }
+
+            count++;
+            await quotaRef.set(count);
+            document.getElementById("quota-used-banner").innerText = count;
+            if (count >= dailyLimit) lockInputForQuota(true);
+            return true;
+        }
+
+        async function updateQuotaDisplayOnly() {
+            if (!currentUser) return;
+            const uid = currentUser.uid;
+            const today = getTodayKey();
+            const snapshot = await database.ref(`users_quota/${uid}/${today}`).once("value");
+            const count = snapshot.val() || 0;
+            document.getElementById("limit-banner").style.display = "block";
+            document.getElementById("quota-used-banner").innerText = count;
+            if (count >= dailyLimit) lockInputForQuota(true); else lockInputForQuota(false);
+        }
+
+        function lockInputForQuota(shouldLock) {
+            document.getElementById("user-input").disabled = shouldLock;
+            document.getElementById("send-btn").disabled = shouldLock;
+            document.getElementById("quota-error-text").style.display = shouldLock ? "block" : "none";
+        }
+
+        // --- מערכת הצ'אט וההיסטוריה ---
+        let conversations = {};
+
+        function initUserChatSystem() {
+            try { conversations = JSON.parse(localStorage.getItem(`groq_convs_${currentUser.uid}`)) || {}; } catch(e) { conversations = {}; }
+            updateQuotaDisplayOnly();
+            const keys = Object.keys(conversations);
+            if (keys.length > 0) {
+                const latestId = keys.sort((a, b) => conversations[b].timestamp - conversations[a].timestamp)[0];
+                loadConversation(latestId);
+            } else { startNewChat(); }
+
+            document.getElementById("user-input").addEventListener('input', function() {
+                if (document.getElementById("quota-error-text").style.display === "block") return;
+                document.getElementById("send-btn").disabled = !this.value.trim() || isWaitingForBot;
+            });
+        }
+
+        function renderHistoryList() {
+            const listElement = document.getElementById("history-list");
+            listElement.innerHTML = "";
+            const keys = Object.keys(conversations).sort((a, b) => conversations[b].timestamp - conversations[a].timestamp);
+            
+            keys.forEach(id => {
+                const wrapper = document.createElement("div");
+                wrapper.className = `history-item-wrapper ${id === currentConversationId ? "active" : ""}`;
+                const item = document.createElement("div");
+                item.className = "history-item";
+                item.innerText = conversations[id].title;
+                item.onclick = () => loadConversation(id);
+                
+                const menuBtn = document.createElement("button");
+                menuBtn.className = "history-menu-btn"; menuBtn.innerHTML = "⋮";
+                menuBtn.onclick = (e) => toggleContextMenu(e, id);
+
+                wrapper.appendChild(item); wrapper.appendChild(menuBtn); listElement.appendChild(wrapper);
+            });
+        }
+
+        function toggleContextMenu(e, id) {
+            e.stopPropagation(); menuSelectedChatId = id;
+            const menu = document.getElementById("global-context-menu");
+            const rect = e.target.getBoundingClientRect();
+            menu.style.top = `${rect.top + window.scrollY}px`;
+            if (languages[currentLang].dir === "rtl") menu.style.left = `${rect.left + window.scrollX + 20}px`;
+            else menu.style.left = `${rect.left + window.scrollX - 120}px`;
+            menu.style.display = "block";
+        }
+
+        document.addEventListener("click", () => { document.getElementById("global-context-menu").style.display = "none"; });
+
+        function triggerRenameChat() {
+            if (!menuSelectedChatId) return;
+            const l = languages[currentLang];
+            const oldName = conversations[menuSelectedChatId].title;
+            const newName = prompt(l.promptPrompt, oldName);
+            if (newName && newName.trim() !== "") {
+                conversations[menuSelectedChatId].title = newName.trim();
+                localStorage.setItem(`groq_convs_${currentUser.uid}`, JSON.stringify(conversations));
+                renderHistoryList();
+            }
+        }
+
+        function triggerDeleteChat() {
+            if (!menuSelectedChatId) return;
+            const l = languages[currentLang];
+            if (confirm(l.confirmDelete)) {
+                delete conversations[menuSelectedChatId];
+                localStorage.setItem(`groq_convs_${currentUser.uid}`, JSON.stringify(conversations));
+                if (currentConversationId === menuSelectedChatId) startNewChat(); else renderHistoryList();
+            }
+        }
+
+        function startNewChat() {
+            currentConversationId = null; editingMessageIndex = null;
+            document.getElementById("chat-container").innerHTML = "";
+            renderHistoryList(); updateQuotaDisplayOnly();
+            document.getElementById("user-input").value = "";
+        }
+
+        function loadConversation(id) {
+            currentConversationId = id; editingMessageIndex = null;
+            document.getElementById("chat-container").innerHTML = "";
+            if (conversations[id] && conversations[id].messages) {
+                conversations[id].messages.forEach((msg, index) => {
+                    appendMessageRow(msg.content, msg.role, index, msg.mediaType, msg.mediaUrl);
+                });
+            }
+            renderHistoryList(); updateQuotaDisplayOnly();
+        }
+
+        // --- 🌐 פונקציית עזר לביצוע חיפוש חי DuckDuckGo ---
+        async function fetchWebSearch(query) {
+            try {
+                const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(query))}`);
+                if (!res.ok) return "";
+                const data = await res.json();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data.contents, 'text/html');
+                const results = doc.querySelectorAll('.result__snippet');
+                let searchSnippets = "";
+                results.forEach((el, index) => {
+                    if (index < 4) searchSnippets += el.innerText + "\n";
+                });
+                return searchSnippets;
+            } catch (e) {
+                console.error("Search failed", e);
+                return "";
+            }
+        }
+
+        // --- פונקציית שליחת ההודעות המרכזית ---
+        async function sendMessage() {
+            const inputElement = document.getElementById("user-input");
+            let userMessage = inputElement.value.trim();
+            const l = languages[currentLang];
+            if (!userMessage || isWaitingForBot) return;
+
+            const hasQuota = await checkAndIncrementQuota();
+            if (!hasQuota) return;
+
+            if (editingMessageIndex !== null) {
+                const editingIndex = editingMessageIndex; editingMessageIndex = null;
+                conversations[currentConversationId].messages = conversations[currentConversationId].messages.slice(0, editingIndex);
+                loadConversation(currentConversationId);
+            }
+
+            if (!currentConversationId) {
+                currentConversationId = "conv_" + Date.now();
+                conversations[currentConversationId] = {
+                    title: userMessage.split(' ').slice(0, 4).join(' ') + "...",
+                    timestamp: Date.now(), messages: []
+                };
+                document.getElementById("chat-container").innerHTML = "";
+            }
+
+            const messageIndex = conversations[currentConversationId].messages.length;
+            conversations[currentConversationId].messages.push({ role: "user", content: userMessage });
+            appendMessageRow(userMessage, "user", messageIndex);
+
+            conversations[currentConversationId].timestamp = Date.now();
+            localStorage.setItem(`groq_convs_${currentUser.uid}`, JSON.stringify(conversations));
+            renderHistoryList();
+
+            inputElement.value = ""; adjustTextareaHeight(inputElement);
+            document.getElementById("send-btn").disabled = true;
+            isWaitingForBot = true;
+            const loadingId = appendLoadingRow();
+
+            const lowerMsg = userMessage.toLowerCase();
+            const wantsImage = lowerMsg.includes("תמונה") || lowerMsg.includes("תצייר") || lowerMsg.includes("צייר") || lowerMsg.includes("תיצור") || lowerMsg.includes("תייצר");
+            const wantsVideo = lowerMsg.includes("סרטון") || lowerMsg.includes("וידאו") || lowerMsg.includes("סרט");
+
+            if (!apiKey) { alert(l.maintenance); if(document.getElementById(loadingId)) document.getElementById(loadingId).remove(); isWaitingForBot = false; return; }
+
+            // בניית היסטוריית ה-Chat בצורה נקייה
+            const chatHistory = conversations[currentConversationId].messages.slice(-12).map(msg => {
+                let cleanContent = msg.content;
+                if (msg.role === "assistant" && msg.mediaUrl) {
+                    cleanContent = `[System Log: Visual media was shown to user here. Descriptive context: ${msg.content}]`;
+                }
+                return { role: msg.role, content: cleanContent };
+            });
+
+            // 1. חיפוש חי ברשת
+            let searchResultsText = "";
+            const isQuestionOrEntity = userMessage.length > 3 && !lowerMsg.includes("היי") && !lowerMsg.includes("שלום") && !lowerMsg.includes("מה קורה");
+            
+            if (isQuestionOrEntity) {
+                searchResultsText = await fetchWebSearch(userMessage);
+            }
+
+            // === 🖼️ זרימת יצירת מדיה (תמונות וסרטונים) ===
+            if (wantsImage || wantsVideo) {
+                let finalImagePrompt = "";
+                try {
+                    const promptGenerationResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                        method: "POST",
+                        headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            model: "llama-3.3-70b-versatile",
+                            messages: [
+                                { 
+                                    role: "system", 
+                                    content: "You are a translation and prompt extraction API. Your job is ONLY to extract the subject of the user's image request and translate it to a clean 2-4 word English phrase. Respond ONLY with raw English text. NEVER include lines like 'הפרומפט שנוצר' or any Hebrew explanations. Example: if the user asks for MrBeast, output 'MrBeast realistic portrait'." 
+                                },
+                                ...chatHistory,
+                                {
+                                    role: "user",
+                                    content: `Current User Request: "${userMessage}"`
+                                }
+                            ],
+                            temperature: 0.1
+                        })
+                    });
+
+                    if (promptGenerationResponse.ok) {
+                        const promptData = await promptGenerationResponse.json();
+                        finalImagePrompt = promptData.choices[0].message.content.trim().replace(/^"|"$/g, '');
+                    }
+                } catch (e) {
+                    console.error("Contextual prompt generation failed", e);
+                }
+                
+                // === 🛡️ מנגנון הגנה אקטיבי מובנה (Fallback לניקוי עברית) ===
+                // אם המודל התעקש להחזיר עברית או סירובים, ננקה את זה ונחלץ מילים באנגלית או את שם המושג המקורי
+                const containsHebrew = /[\u0590-\u05FF]/.test(finalImagePrompt);
+                if (!finalImagePrompt || containsHebrew || finalImagePrompt.includes("sorry") || finalImagePrompt.includes("prompt")) {
+                    // מנקה מילות קישור נפוצות בעברית כדי להישאר עם שם העצם הנקי
+                    let cleanSubject = userMessage.replace(/(?:^|\s)(תמונה|תצייר|צייר|סרטון|וידאו|סרט|תיצור|תייצר|תרכיב|תעשה|תכין|לי|של|שלי|בשבילי|את)(?=\s|$)/gi, "").trim();
+                    
+                    // המרה ידנית פשוטה לשמות פופולריים אם המשתמש ביקש אותם
+                    if (cleanSubject.includes("מיסטר ביסט") || cleanSubject.toLowerCase().includes("מיסטרביסט")) {
+                        finalImagePrompt = "MrBeast portrait photography";
+                    } else {
+                        finalImagePrompt = cleanSubject || "creative artwork";
+                    }
+                }
+
+                const encodedPrompt = encodeURIComponent(finalImagePrompt);
+                let mediaType = wantsImage ? "image" : "video";
+                let mediaUrl = wantsImage ? `https://image.pollinations.ai/p/${encodedPrompt}?width=1024&height=1024&nologo=true&enhance=true&seed=${Math.floor(Math.random()*100000)}` : `https://image.pollinations.ai/p/${encodedPrompt}?width=800&height=600&enhance=true&feed=true&seed=${Math.floor(Math.random()*100000)}`;
+                let botReplyText = wantsImage ? `🎨 הנה מה שביקשת! \n\n**הפרומפט שנוצר:** "${finalImagePrompt}"` : `🎬 הנה האנימציה שביקשת! \n\n**הפרומפט שנוצר:** "${finalImagePrompt}"`;
+
+                if(document.getElementById(loadingId)) document.getElementById(loadingId).remove();
+                isWaitingForBot = false;
+
+                const botIndex = conversations[currentConversationId].messages.length;
+                
+                conversations[currentConversationId].messages.push({ role: "assistant", content: botReplyText, mediaType: mediaType, mediaUrl: mediaUrl });
+                appendMessageRow(botReplyText, "assistant", botIndex, mediaType, mediaUrl);
+                
+                localStorage.setItem(`groq_convs_${currentUser.uid}`, JSON.stringify(conversations));
+                return;
+            }
+
+            // 3. זרימת טקסט חכמה רגילה
+            const systemPrompt = `You are SmartBot. You are connected to the live internet using DuckDuckGo. 
+Here is live information from DuckDuckGo search results regarding the user's current input, use it to give accurate, non-hallucinated and fully updated information:
+${searchResultsText}
+
+Identify the user's language and reply 100% ONLY in that language. Be engaging and smart!`;
+
+            try {
+                const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                    method: "POST",
+                    headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        model: "llama-3.3-70b-versatile",
+                        messages: [
+                            { role: "system", content: systemPrompt },
+                            ...chatHistory
+                        ],
+                        temperature: 0.6
+                    })
+                });
+
+                const data = await response.json();
+                if(document.getElementById(loadingId)) document.getElementById(loadingId).remove();
+                isWaitingForBot = false;
+
+                if (response.ok) {
+                    const botReply = data.choices[0].message.content;
+                    const botIndex = conversations[currentConversationId].messages.length;
+                    conversations[currentConversationId].messages.push({ role: "assistant", content: botReply });
+                    appendMessageRow(botReply, "assistant", botIndex);
+                    localStorage.setItem(`groq_convs_${currentUser.uid}`, JSON.stringify(conversations));
+                } else {
+                    appendMessageRow(l.serverErr, "error");
+                }
+            } catch (error) {
+                if(document.getElementById(loadingId)) document.getElementById(loadingId).remove();
+                isWaitingForBot = false; appendMessageRow(l.connErr, "error");
+            }
+        }
+
+        // --- עזרי תצוגה, העתקה ועריכה ---
+        function copyMessage(index) {
+            const txt = conversations[currentConversationId].messages[index].content;
+            navigator.clipboard.writeText(txt);
+        }
+
+        function editUserMessage(index) {
+            if (isWaitingForBot) return;
+            const txt = conversations[currentConversationId].messages[index].content;
+            const inputElement = document.getElementById("user-input");
+            inputElement.value = txt; inputElement.focus(); adjustTextareaHeight(inputElement);
+            document.getElementById("send-btn").disabled = false;
+            editingMessageIndex = index;
+        }
+
+        function appendMessageRow(text, role, index = null, mediaType = null, mediaUrl = null) {
+            const chatContainer = document.getElementById("chat-container");
+            const row = document.createElement("div");
+            row.className = `message-row ${role}`;
+            
+            const content = document.createElement("div");
+            content.className = "message-content";
+            
+            const textNode = document.createElement("div");
+            textNode.innerText = text;
+            content.appendChild(textNode);
+
+            if (mediaType === "image" && mediaUrl) {
+                const img = document.createElement("img");
+                img.src = mediaUrl; img.className = "media-output"; img.alt = "AI Generated Image";
+                content.appendChild(img);
+            } else if (mediaType === "video" && mediaUrl) {
+                const imgVid = document.createElement("img");
+                imgVid.src = mediaUrl; imgVid.className = "media-output"; imgVid.alt = "AI Generated Video";
+                content.appendChild(imgVid);
+            }
+
+            row.appendChild(content);
+            
+            const l = languages[currentLang];
+            if ((role === "user" || role === "assistant") && index !== null) {
+                const actions = document.createElement("div"); actions.className = "message-actions";
+                const copyBtn = document.createElement("button"); copyBtn.className = "action-btn"; copyBtn.innerHTML = `${l.copy}`; copyBtn.onclick = () => copyMessage(index); actions.appendChild(copyBtn);
+                if (role === "user") { const editBtn = document.createElement("button"); editBtn.className = "action-btn"; editBtn.innerHTML = `${l.edit}`; editBtn.onclick = () => editUserMessage(index); actions.appendChild(editBtn); }
+                row.appendChild(actions);
+            }
+            chatContainer.appendChild(row); chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function appendLoadingRow() {
+            const chatContainer = document.getElementById("chat-container");
+            const id = "loader_" + Date.now();
+            const row = document.createElement("div"); row.className = "message-row assistant"; row.id = id;
+            const content = document.createElement("div"); content.className = "message-content";
+            const loader = document.createElement("div"); loader.className = "dots-loader"; loader.innerHTML = "<span></span><span></span><span></span><span></span>"; content.appendChild(loader); row.appendChild(content);
+            chatContainer.appendChild(row); chatContainer.scrollTop = chatContainer.scrollHeight;
+            return id;
+        }
+
+        function adjustTextareaHeight(element) { element.style.height = "auto"; element.style.height = (element.scrollHeight) + "px"; }
+        function handleKeyPress(event) { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); sendMessage(); } }
+
+        // --- פאנל הניהול הראשי בלחיצה כפולה ---
+        document.getElementById("header-title").addEventListener("dblclick", () => {
+            const password = prompt("הכנס סיסמה:");
+            if (password === adminPassword) {
+                toggleAdminPanel();
+                document.getElementById("api-key-input").value = apiKey;
+                document.getElementById("site-name-input").value = siteName;
+                document.getElementById("admin-pass-input").value = adminPassword;
+            } else if (password !== null) { alert("סיסמה שגויה!"); }
+        });
+
+        function toggleAdminPanel() {
+            const panel = document.getElementById("admin-panel");
+            panel.style.display = panel.style.display === "block" ? "none" : "block";
+        }
+
+        function saveAdminSettings() {
+            const keyInput = document.getElementById("api-key-input").value.trim();
+            const nameInput = document.getElementById("site-name-input").value.trim();
+            const passInput = document.getElementById("admin-pass-input").value.trim();
+
+            const updates = {};
+            if (keyInput) updates.api_key = keyInput;
+            if (nameInput) updates.site_name = nameInput;
+            if (passInput) updates.admin_password = passInput;
+
+            database.ref("global_settings").update(updates).then(() => {
+                alert("השינויים נשמרו בהצלחה!"); loadGlobalSettings(); toggleAdminPanel();
+            }).catch(err => alert("שגיאה בשמירה: " + err.message));
+        }
+    </script>
+</body>
+</html>
